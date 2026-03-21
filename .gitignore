@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build
+.next/
+dist/
+.turbo/
+
+# env
+.env
+.env.local
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+packages/database/prisma/*.db
+
+# logs
+*.log

@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+# Dockerfile is in apps/telegram/ — Railway resolves this relative to root directory
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# No healthcheck — bot uses long-polling, not HTTP
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
