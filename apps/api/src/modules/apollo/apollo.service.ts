@@ -107,7 +107,7 @@ export async function searchPeople(
     body.person_locations = filters.personLocations;
   }
 
-  return apolloFetch("/mixed_people/search", body);
+  return apolloFetch("/mixed_people/api_search", body);
 }
 
 /**
