@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsup src/server.ts --format esm --dts",
-    "start": "node dist/server.mjs",
+    "build": "tsup",
+    "start": "node dist/server.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

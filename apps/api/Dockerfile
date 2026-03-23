@@ -44,4 +44,4 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
 WORKDIR /app/apps/api
-CMD ["node", "dist/server.mjs"]
+CMD ["node", "dist/server.js"]

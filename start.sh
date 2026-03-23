@@ -4,7 +4,7 @@
 
 echo "Starting Xperise API + Telegram bot..."
 
-cd /app/apps/api && node dist/server.mjs &
+cd /app/apps/api && node dist/server.js &
 API_PID=$!
 
 cd /app/apps/telegram && node dist/index.js &
