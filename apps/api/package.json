@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsup src/server.ts --format esm --dts",
-    "start": "node dist/server.js",
+    "start": "node dist/server.mjs",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

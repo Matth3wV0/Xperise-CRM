@@ -7,41 +7,48 @@ RUN corepack enable
 FROM base AS builder
 WORKDIR /app
 
-# Copy workspace manifests — enables layer caching for installs
+# Copy workspace manifests for layer caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/api/package.json      ./apps/api/package.json
+COPY apps/api/package.json       ./apps/api/package.json
+COPY apps/telegram/package.json  ./apps/telegram/package.json
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/shared/package.json   ./packages/shared/package.json
 
 RUN pnpm install --frozen-lockfile
 
-# Copy source after install for better layer caching
+# Copy all source
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
+COPY apps/telegram/ ./apps/telegram/
 
-# Generate Prisma client for linux-debian target
+# Generate Prisma client
 RUN pnpm --filter @xperise/database db:generate
 
-# Build API — tsup bundles to dist/
-RUN pnpm --filter @xperise/api build
+# Build both apps
+RUN pnpm --filter @xperise/api build && pnpm --filter @xperise/telegram build
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 FROM base AS runner
 WORKDIR /app
 
-# Reinstall only production deps in a clean layer
+# Production deps only
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/api/package.json      ./apps/api/package.json
+COPY apps/api/package.json       ./apps/api/package.json
+COPY apps/telegram/package.json  ./apps/telegram/package.json
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/shared/package.json   ./packages/shared/package.json
 
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy generated Prisma engine files from builder
+# Prisma engine from builder
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Copy compiled API
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
+# Compiled outputs
+COPY --from=builder /app/apps/api/dist      ./apps/api/dist
+COPY --from=builder /app/apps/telegram/dist ./apps/telegram/dist
 
-WORKDIR /app/apps/api
-CMD ["node", "dist/server.mjs"]
+# Startup script
+COPY start.sh ./start.sh
+RUN chmod +x start.sh
+
+CMD ["./start.sh"]
