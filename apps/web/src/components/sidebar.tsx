@@ -57,22 +57,16 @@ export function Sidebar() {
           return (
             <Link
               key={item.name}
-              href={item.disabled ? "#" : item.href}
+              href={item.href}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                item.disabled && "pointer-events-none opacity-40"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
               <item.icon className="h-4 w-4" />
               {item.name}
-              {item.disabled && (
-                <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Soon
-                </span>
-              )}
             </Link>
           );
         })}
