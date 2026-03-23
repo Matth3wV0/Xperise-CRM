@@ -41,6 +41,52 @@ export async function telegramRoutes(server: FastifyInstance) {
     };
   });
 
+  // GET /telegram/groups
+  // List all registered Telegram groups
+  server.get("/groups", async () => {
+    const groups = await prisma.telegramGroup.findMany({
+      orderBy: { addedAt: "desc" },
+      select: {
+        id: true,
+        chatId: true,
+        name: true,
+        isActive: true,
+        addedAt: true,
+      },
+    });
+
+    return { groups };
+  });
+
+  // PUT /telegram/groups/:id/activate
+  // Set a group as the active group (ADMIN/MANAGER only)
+  server.put<{ Params: { id: string } }>(
+    "/groups/:id/activate",
+    { preHandler: authorize("ADMIN", "MANAGER") },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const group = await prisma.telegramGroup.findUnique({ where: { id } });
+      if (!group) {
+        return reply.status(404).send({ error: "Group not found" });
+      }
+
+      // Deactivate all, then activate the selected one
+      await prisma.$transaction([
+        prisma.telegramGroup.updateMany({
+          where: { isActive: true },
+          data: { isActive: false },
+        }),
+        prisma.telegramGroup.update({
+          where: { id },
+          data: { isActive: true },
+        }),
+      ]);
+
+      return { success: true, activeGroup: { id: group.id, name: group.name, chatId: group.chatId } };
+    }
+  );
+
   // DELETE /telegram/unbind (Admin only — unbind any user)
   server.delete<{ Params: { userId: string } }>(
     "/unbind/:userId",

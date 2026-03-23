@@ -6,12 +6,12 @@ import {
   daysSince,
   formatDate,
 } from "../lib/formatter.js";
-
-const GROUP_CHAT_ID = process.env.TELEGRAM_GROUP_CHAT_ID;
+import { getActiveGroupChatId } from "../lib/active-group.js";
 
 export async function sendColdLeadDigest(bot: Bot<Context>) {
-  if (!GROUP_CHAT_ID) {
-    console.warn("TELEGRAM_GROUP_CHAT_ID not set — skipping cold lead digest.");
+  const groupChatId = await getActiveGroupChatId();
+  if (!groupChatId) {
+    console.warn("No active Telegram group configured — skipping cold lead digest.");
     return;
   }
 
@@ -68,7 +68,7 @@ export async function sendColdLeadDigest(bot: Bot<Context>) {
   msg += `<i>Gửi <code>[Tên công ty] note</code> để cập nhật.</i>`;
 
   try {
-    await bot.api.sendMessage(GROUP_CHAT_ID, msg, { parse_mode: "HTML" });
+    await bot.api.sendMessage(groupChatId, msg, { parse_mode: "HTML" });
   } catch (err) {
     console.error("Failed to send cold lead digest:", err);
   }

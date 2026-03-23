@@ -3,6 +3,29 @@ import { prisma } from "@xperise/database";
 import { HELP_TEXT } from "../lib/formatter.js";
 
 export async function handleStart(ctx: Context) {
+  // ── Group chat: register the group ──────────────────────────
+  if (
+    ctx.chat?.type === "group" ||
+    ctx.chat?.type === "supergroup"
+  ) {
+    const chatId = String(ctx.chat.id);
+    const groupName = ctx.chat.title ?? "Unknown Group";
+
+    await prisma.telegramGroup.upsert({
+      where: { chatId },
+      update: { name: groupName },
+      create: { chatId, name: groupName, isActive: false },
+    });
+
+    await ctx.reply(
+      `✅ Group <b>${groupName}</b> đã được đăng ký!\n\n` +
+        `Vào <b>Settings</b> trên web app để chọn group này làm group nhận thông báo.`,
+      { parse_mode: "HTML" }
+    );
+    return;
+  }
+
+  // ── Private chat: original /start logic ─────────────────────
   if (ctx.chat?.type !== "private") return;
 
   const telegramId = String(ctx.from?.id);

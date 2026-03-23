@@ -1,7 +1,25 @@
+import { prisma } from "@xperise/database";
+
+/**
+ * Get the active Telegram group chat ID.
+ * Checks DB first (TelegramGroup with isActive=true),
+ * falls back to TELEGRAM_GROUP_CHAT_ID env var.
+ */
+async function getActiveGroupChatId(): Promise<string | null> {
+  const activeGroup = await prisma.telegramGroup.findFirst({
+    where: { isActive: true },
+    select: { chatId: true },
+  });
+
+  if (activeGroup) return activeGroup.chatId;
+
+  return process.env.TELEGRAM_GROUP_CHAT_ID ?? null;
+}
+
 /**
  * Send a message to the BD Telegram group via Bot API.
  * Used by API routes that need to notify the team (campaign launch, alerts).
- * Requires TELEGRAM_BOT_TOKEN and TELEGRAM_GROUP_CHAT_ID env vars.
+ * Requires TELEGRAM_BOT_TOKEN env var. Group chat ID is resolved from DB or env.
  */
 export async function sendTelegramMessage(
   text: string,
@@ -11,10 +29,14 @@ export async function sendTelegramMessage(
   }
 ): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = options?.chatId ?? process.env.TELEGRAM_GROUP_CHAT_ID;
+  if (!token) {
+    console.warn("[telegram-notify] TELEGRAM_BOT_TOKEN not set — skipping.");
+    return;
+  }
 
-  if (!token || !chatId) {
-    console.warn("[telegram-notify] TELEGRAM_BOT_TOKEN or TELEGRAM_GROUP_CHAT_ID not set — skipping.");
+  const chatId = options?.chatId ?? (await getActiveGroupChatId());
+  if (!chatId) {
+    console.warn("[telegram-notify] No active group configured and TELEGRAM_GROUP_CHAT_ID not set — skipping.");
     return;
   }
 

@@ -1,12 +1,12 @@
 import type { Bot, Context } from "grammy";
 import { prisma } from "@xperise/database";
 import { VERY_COLD_DAYS } from "../lib/formatter.js";
-
-const GROUP_CHAT_ID = process.env.TELEGRAM_GROUP_CHAT_ID;
+import { getActiveGroupChatId } from "../lib/active-group.js";
 
 export async function sendWeeklySummary(bot: Bot<Context>) {
-  if (!GROUP_CHAT_ID) {
-    console.warn("TELEGRAM_GROUP_CHAT_ID not set — skipping weekly summary.");
+  const groupChatId = await getActiveGroupChatId();
+  if (!groupChatId) {
+    console.warn("No active Telegram group configured — skipping weekly summary.");
     return;
   }
 
@@ -94,7 +94,7 @@ export async function sendWeeklySummary(bot: Bot<Context>) {
   }
 
   try {
-    await bot.api.sendMessage(GROUP_CHAT_ID, msg, { parse_mode: "HTML" });
+    await bot.api.sendMessage(groupChatId, msg, { parse_mode: "HTML" });
   } catch (err) {
     console.error("Failed to send weekly summary:", err);
   }
