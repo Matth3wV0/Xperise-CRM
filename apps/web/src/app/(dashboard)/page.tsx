@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Building2, TrendingUp, CheckCircle } from "lucide-react";
+import { Users, Building2, TrendingUp, Target } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ContactFunnel } from "@/components/dashboard/contact-funnel";
 import { RecentActions } from "@/components/dashboard/recent-actions";
 import { apiGet } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { formatCurrency } from "@/lib/utils";
 
 interface DashboardStats {
@@ -29,7 +30,12 @@ interface ActionItem {
   note?: string;
 }
 
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse rounded-lg bg-secondary ${className ?? ""}`} />;
+}
+
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [funnel, setFunnel] = useState<FunnelItem[]>([]);
   const [actions, setActions] = useState<ActionItem[]>([]);
@@ -39,7 +45,7 @@ export default function DashboardPage() {
     async function load() {
       try {
         const [statsRes, funnelRes, actionsRes] = await Promise.all([
-          apiGet<{ totalContacts: number; totalCompanies: number; contactsByStatus: Record<string, number>; totalPipelineRevenue: string }>("/dashboard/stats"),
+          apiGet<DashboardStats>("/dashboard/stats"),
           apiGet<{ funnel: FunnelItem[] }>("/dashboard/funnel"),
           apiGet<{ actions: ActionItem[] }>("/dashboard/recent-actions"),
         ]);
@@ -55,59 +61,85 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  const reached = (stats?.contactsByStatus?.REACHED ?? 0) +
+  const activeLeads =
+    (stats?.contactsByStatus?.REACHED ?? 0) +
     (stats?.contactsByStatus?.FOLLOW_UP ?? 0) +
-    (stats?.contactsByStatus?.MEETING_BOOKED ?? 0) +
-    (stats?.contactsByStatus?.CONVERTED ?? 0);
+    (stats?.contactsByStatus?.MEETING_BOOKED ?? 0);
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Xperise BD Pipeline Overview
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {greeting()}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
+          </h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Here&apos;s your BD pipeline overview
+          </p>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <p className="font-medium">{new Date().toLocaleDateString("vi-VN", { weekday: "long" })}</p>
+          <p>{new Date().toLocaleDateString("vi-VN", { day: "2-digit", month: "long", year: "numeric" })}</p>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Contacts"
-          value={stats?.totalContacts ?? 0}
-          icon={Users}
-        />
-        <StatCard
-          title="Companies"
-          value={stats?.totalCompanies ?? 0}
-          icon={Building2}
-        />
-        <StatCard
-          title="Reached+"
-          value={reached}
-          icon={CheckCircle}
-          description="Reached, Follow-up, Meeting, Converted"
-        />
-        <StatCard
-          title="Pipeline Revenue"
-          value={formatCurrency(stats?.totalPipelineRevenue ?? "0")}
-          icon={TrendingUp}
-        />
-      </div>
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[104px] rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Contacts"
+            value={stats?.totalContacts ?? 0}
+            icon={Users}
+            iconColor="bg-indigo-950/60 text-indigo-400"
+          />
+          <StatCard
+            title="Companies"
+            value={stats?.totalCompanies ?? 0}
+            icon={Building2}
+            iconColor="bg-emerald-950/60 text-emerald-400"
+          />
+          <StatCard
+            title="Active Leads"
+            value={activeLeads}
+            icon={Target}
+            description="Reached, Follow-up, Meeting"
+            iconColor="bg-amber-950/60 text-amber-400"
+          />
+          <StatCard
+            title="Pipeline Revenue"
+            value={formatCurrency(stats?.totalPipelineRevenue ?? "0")}
+            icon={TrendingUp}
+            iconColor="bg-violet-950/60 text-violet-400"
+          />
+        </div>
+      )}
 
-      {/* Charts row */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ContactFunnel data={funnel} />
-        <RecentActions actions={actions} />
-      </div>
+      {/* Charts */}
+      {loading ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-[340px] rounded-xl" />
+          <Skeleton className="h-[340px] rounded-xl" />
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ContactFunnel data={funnel} />
+          <RecentActions actions={actions} />
+        </div>
+      )}
     </div>
   );
 }

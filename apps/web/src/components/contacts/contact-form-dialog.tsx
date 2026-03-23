@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiPost, apiPut, apiGet } from "@/lib/api";
 import {
   CONTACT_STATUSES,
@@ -10,7 +8,7 @@ import {
   CONTACT_TYPES,
   PRIORITIES,
 } from "@xperise/shared";
-import { X } from "lucide-react";
+import { X, Building2, AlertCircle } from "lucide-react";
 
 interface Company {
   id: string;
@@ -68,41 +66,64 @@ const INITIAL_FORM: ContactFormData = {
   notes: "",
 };
 
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+      {children}
+      {required && <span className="ml-0.5 text-red-400">*</span>}
+    </label>
+  );
+}
+
+function inputClass(hasError = false) {
+  return `w-full rounded-lg border bg-secondary px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary ${
+    hasError ? "border-red-500" : "border-border"
+  }`;
+}
+
 export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactFormDialogProps) {
   const [form, setForm] = useState<ContactFormData>(INITIAL_FORM);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      apiGet<{ data: Company[] }>("/companies?limit=200").then((res) =>
-        setCompanies(res.data)
-      ).catch(() => {});
-      apiGet<{ users: { id: string; name: string }[] }>("/auth/users").then((res) =>
-        setUsers(res.users)
-      ).catch(() => {});
+    if (!open) return;
 
-      if (editData) {
-        setForm({
-          fullName: editData.fullName,
-          position: editData.position ?? "",
-          email: editData.email ?? "",
-          phone: editData.phone ?? "",
-          linkedin: editData.linkedin ?? "",
-          source: editData.source,
-          priority: editData.priority,
-          type: editData.type,
-          contactStatus: editData.contactStatus,
-          companyId: editData.companyId,
-          assignedToId: editData.assignedToId ?? "",
-          notes: editData.notes ?? "",
-        });
-      } else {
-        setForm(INITIAL_FORM);
-      }
+    // BUG FIX: companyFilterSchema caps limit at max(100). Using limit=200 caused
+    // a Zod validation error → API 500 → silent catch → companies stayed empty.
+    setLoadingCompanies(true);
+    apiGet<{ data: Company[] }>("/companies?limit=100&sortBy=name&sortOrder=asc")
+      .then((res) => setCompanies(res.data))
+      .catch(() => setCompanies([]))
+      .finally(() => setLoadingCompanies(false));
+
+    apiGet<{ users: { id: string; name: string }[] }>("/auth/users")
+      .then((res) => setUsers(res.users))
+      .catch(() => setUsers([]));
+
+    if (editData) {
+      setForm({
+        fullName: editData.fullName,
+        position: editData.position ?? "",
+        email: editData.email ?? "",
+        phone: editData.phone ?? "",
+        linkedin: editData.linkedin ?? "",
+        source: editData.source,
+        priority: editData.priority,
+        type: editData.type,
+        contactStatus: editData.contactStatus,
+        companyId: editData.companyId,
+        assignedToId: editData.assignedToId ?? "",
+        notes: editData.notes ?? "",
+      });
+    } else {
+      setForm(INITIAL_FORM);
     }
+
+    setError("");
   }, [open, editData]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -118,6 +139,7 @@ export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactF
         email: form.email || undefined,
         phone: form.phone || undefined,
         notes: form.notes || undefined,
+        position: form.position || undefined,
       };
 
       if (editData) {
@@ -128,106 +150,149 @@ export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactF
       onSaved();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
+      setError(err instanceof Error ? err.message : "Failed to save contact");
     } finally {
       setSaving(false);
     }
   }
 
+  function setField<K extends keyof ContactFormData>(key: K, value: ContactFormData[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
   if (!open) return null;
 
+  const title = editData ? "Edit Contact" : "Add Contact";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{editData ? "Edit Contact" : "Add Contact"}</CardTitle>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="h-5 w-5" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-xl border border-border bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold">{title}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {editData ? "Update contact information" : "Add a new contact to the CRM"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
           </button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
+        </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Full Name */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Full Name *</label>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          {error && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-red-800/40 bg-red-950/40 px-4 py-3 text-sm text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              {error}
+            </div>
+          )}
+
+          {/* Section: Basic info */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/60 mb-3">Basic Information</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <FieldLabel required>Full Name</FieldLabel>
                 <input
                   required
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={inputClass()}
+                  placeholder="Nguyen Van A"
                   value={form.fullName}
-                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  onChange={(e) => setField("fullName", e.target.value)}
                 />
               </div>
 
-              {/* Company */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Company *</label>
-                <select
-                  required
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={form.companyId}
-                  onChange={(e) => setForm({ ...form, companyId: e.target.value })}
-                >
-                  <option value="">Select company...</option>
-                  {companies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+              <div>
+                <FieldLabel required>Company</FieldLabel>
+                {loadingCompanies ? (
+                  <div className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground animate-pulse">
+                    Loading companies...
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Building2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <select
+                      required
+                      className={`${inputClass()} pl-8`}
+                      value={form.companyId}
+                      onChange={(e) => setField("companyId", e.target.value)}
+                    >
+                      <option value="">Select company...</option>
+                      {companies.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {!loadingCompanies && companies.length === 0 && (
+                  <p className="mt-1 text-xs text-amber-400">No companies found. Add a company first.</p>
+                )}
               </div>
 
-              {/* Position */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Position</label>
+              <div>
+                <FieldLabel>Position</FieldLabel>
                 <input
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={inputClass()}
+                  placeholder="CFO, VP Operations..."
                   value={form.position}
-                  onChange={(e) => setForm({ ...form, position: e.target.value })}
+                  onChange={(e) => setField("position", e.target.value)}
                 />
               </div>
 
-              {/* Email */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Email</label>
+              <div>
+                <FieldLabel>Email</FieldLabel>
                 <input
                   type="email"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={inputClass()}
+                  placeholder="name@company.com"
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  onChange={(e) => setField("email", e.target.value)}
                 />
               </div>
 
-              {/* Phone */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Phone</label>
+              <div>
+                <FieldLabel>Phone</FieldLabel>
                 <input
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={inputClass()}
+                  placeholder="+84 ..."
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(e) => setField("phone", e.target.value)}
                 />
               </div>
 
-              {/* LinkedIn */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">LinkedIn</label>
+              <div>
+                <FieldLabel>LinkedIn URL</FieldLabel>
                 <input
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={inputClass()}
                   placeholder="https://linkedin.com/in/..."
                   value={form.linkedin}
-                  onChange={(e) => setForm({ ...form, linkedin: e.target.value })}
+                  onChange={(e) => setField("linkedin", e.target.value)}
                 />
               </div>
+            </div>
+          </div>
 
-              {/* Source */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Source</label>
+          {/* Section: Classification */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/60 mb-3">Classification</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <FieldLabel>Source</FieldLabel>
                 <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  className={inputClass()}
                   value={form.source}
-                  onChange={(e) => setForm({ ...form, source: e.target.value })}
+                  onChange={(e) => setField("source", e.target.value)}
                 >
                   {CONTACT_SOURCES.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -235,13 +300,12 @@ export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactF
                 </select>
               </div>
 
-              {/* Type */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Type</label>
+              <div>
+                <FieldLabel>Type</FieldLabel>
                 <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  className={inputClass()}
                   value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  onChange={(e) => setField("type", e.target.value)}
                 >
                   {CONTACT_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -249,13 +313,12 @@ export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactF
                 </select>
               </div>
 
-              {/* Priority */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Priority</label>
+              <div>
+                <FieldLabel>Priority</FieldLabel>
                 <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  className={inputClass()}
                   value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })}
+                  onChange={(e) => setField("priority", Number(e.target.value))}
                 >
                   {PRIORITIES.map((p) => (
                     <option key={p.value} value={p.value}>{p.label}</option>
@@ -263,13 +326,12 @@ export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactF
                 </select>
               </div>
 
-              {/* Status */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Status</label>
+              <div>
+                <FieldLabel>Status</FieldLabel>
                 <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  className={inputClass()}
                   value={form.contactStatus}
-                  onChange={(e) => setForm({ ...form, contactStatus: e.target.value })}
+                  onChange={(e) => setField("contactStatus", e.target.value)}
                 >
                   {CONTACT_STATUSES.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -277,13 +339,12 @@ export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactF
                 </select>
               </div>
 
-              {/* Assigned To */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Assigned To</label>
+              <div className="sm:col-span-2">
+                <FieldLabel>Assigned To</FieldLabel>
                 <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  className={inputClass()}
                   value={form.assignedToId}
-                  onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}
+                  onChange={(e) => setField("assignedToId", e.target.value)}
                 >
                   <option value="">Unassigned</option>
                   {users.map((u) => (
@@ -292,29 +353,44 @@ export function ContactFormDialog({ open, onClose, onSaved, editData }: ContactF
                 </select>
               </div>
             </div>
+          </div>
 
-            {/* Notes */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Notes</label>
-              <textarea
-                rows={3}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              />
-            </div>
+          {/* Notes */}
+          <div>
+            <FieldLabel>Notes</FieldLabel>
+            <textarea
+              rows={3}
+              className={`${inputClass()} resize-none`}
+              placeholder="Any additional notes about this contact..."
+              value={form.notes}
+              onChange={(e) => setField("notes", e.target.value)}
+            />
+          </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={saving}>
-                {saving ? "Saving..." : editData ? "Update" : "Create"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            >
+              {saving ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                  Saving...
+                </span>
+              ) : editData ? "Update Contact" : "Create Contact"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

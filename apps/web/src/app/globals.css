@@ -5,43 +5,50 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 239 84% 97%;
+    --accent-foreground: 239 84% 40%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* Deep navy-blue background */
+    --background: 225 35% 4%;
+    --foreground: 213 27% 88%;
+    --card: 225 30% 7%;
+    --card-foreground: 213 27% 88%;
+    --popover: 225 30% 7%;
+    --popover-foreground: 213 27% 88%;
+    /* Indigo primary — replaces plain white */
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 225 30% 11%;
+    --secondary-foreground: 213 27% 88%;
+    --muted: 225 30% 11%;
+    --muted-foreground: 220 10% 52%;
+    --accent: 225 30% 14%;
+    --accent-foreground: 213 27% 88%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 225 30% 15%;
+    --input: 225 30% 11%;
+    --ring: 239 84% 67%;
+    --radius: 0.5rem;
   }
 }
 
@@ -51,5 +58,27 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .status-no-contact {
+    @apply bg-zinc-800/60 text-zinc-400 border border-zinc-700/50;
+  }
+  .status-contact {
+    @apply bg-blue-950/60 text-blue-400 border border-blue-800/50;
+  }
+  .status-reached {
+    @apply bg-amber-950/60 text-amber-400 border border-amber-800/50;
+  }
+  .status-follow-up {
+    @apply bg-orange-950/60 text-orange-400 border border-orange-800/50;
+  }
+  .status-meeting-booked {
+    @apply bg-violet-950/60 text-violet-400 border border-violet-800/50;
+  }
+  .status-converted {
+    @apply bg-emerald-950/60 text-emerald-400 border border-emerald-800/50;
   }
 }
