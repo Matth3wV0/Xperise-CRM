@@ -13,6 +13,8 @@ import { actionRoutes } from "./modules/actions/actions.routes";
 import { importRoutes } from "./modules/import/import.routes";
 import { notificationRoutes } from "./modules/notifications/notifications.routes";
 import { telegramRoutes } from "./modules/telegram/telegram.routes";
+import { apolloRoutes } from "./modules/apollo/apollo.routes";
+import { campaignRoutes } from "./modules/campaigns/campaign.routes";
 
 const server = Fastify({
   logger: {
@@ -50,6 +52,8 @@ async function start() {
   await server.register(importRoutes, { prefix: "/import" });
   await server.register(notificationRoutes, { prefix: "/notifications" });
   await server.register(telegramRoutes, { prefix: "/telegram" });
+  await server.register(apolloRoutes, { prefix: "/apollo" });
+  await server.register(campaignRoutes, { prefix: "/campaigns" });
 
   // Health check
   server.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));

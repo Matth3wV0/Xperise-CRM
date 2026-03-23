@@ -1,10 +1,17 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
 import { STATUS_LABELS, STATUS_EMOJI } from "../lib/formatter.js";
+import { handleCampaignCallback } from "./approve.js";
 
 export async function handleCallback(ctx: Context) {
   const data = ctx.callbackQuery?.data;
   if (!data) return;
+
+  // ── Campaign approve/reject callbacks (ca:, cr:) ─────────────────────────
+  if (data.startsWith("ca:") || data.startsWith("cr:")) {
+    await handleCampaignCallback(ctx, data);
+    return;
+  }
 
   // Always answer to remove the loading spinner
   await ctx.answerCallbackQuery();

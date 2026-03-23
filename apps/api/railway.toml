@@ -1,9 +1,10 @@
 [build]
 builder = "dockerfile"
 # Railway root directory must be "/" (repo root) for monorepo context
-dockerfilePath = "apps/telegram/Dockerfile"
+dockerfilePath = "apps/api/Dockerfile"
 
 [deploy]
-# No healthcheck — bot uses long-polling, not HTTP
+healthcheckPath = "/health"
+healthcheckTimeout = 10
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10

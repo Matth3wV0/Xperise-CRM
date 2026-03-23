@@ -6,6 +6,8 @@ import { handleMine } from "./handlers/mine.js";
 import { handleCold } from "./handlers/cold.js";
 import { handleGroupMessage } from "./handlers/message.js";
 import { handleCallback } from "./handlers/callback.js";
+import { handleFind } from "./handlers/find.js";
+import { handleApprove, handleReject } from "./handlers/approve.js";
 import { HELP_TEXT } from "./lib/formatter.js";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -24,6 +26,13 @@ bot.command("cold", handleCold);
 bot.command("help", async (ctx) => {
   await ctx.reply(HELP_TEXT, { parse_mode: "HTML" });
 });
+
+// ── Apollo lead search ───────────────────────────────────────────────────────
+bot.command("find", handleFind);
+
+// ── Campaign approval ────────────────────────────────────────────────────────
+bot.command("approve", handleApprove);
+bot.command("reject", handleReject);
 
 // ── Group message handler: [Company] note pattern ───────────────────────────
 bot.on("message:text", handleGroupMessage);

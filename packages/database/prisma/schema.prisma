@@ -44,6 +44,7 @@ model User {
   notifications    Notification[]
   auditLogs        AuditLog[]
   telegramBinding  TelegramBinding?
+  campaigns        Campaign[]
 
   @@map("users")
 }
@@ -136,6 +137,8 @@ model Contact {
   emailVerify     EmailVerifyStatus @default(UNKNOWN)
   notes           String?
   lastTouchedAt   DateTime?         // Updated when any ContactAction is logged
+  enrichmentData  Json?             // Apollo enrichment cache — check before calling API
+  nextActionAt    DateTime?         // Next scheduled follow-up
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -146,6 +149,7 @@ model Contact {
   assignedToId String?
   actions     ContactAction[]
   emailLogs   EmailLog[]
+  campaignRecipients CampaignRecipient[]
 
   @@index([companyId])
   @@index([assignedToId])
@@ -229,26 +233,106 @@ model Pipeline {
   @@map("pipelines")
 }
 
+// ─── CAMPAIGNS (Phase 2) ─────────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum EmailStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENDING
+  SENT
+  OPENED
+  REPLIED
+  BOUNCED
+  REJECTED
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  status      CampaignStatus @default(DRAFT)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  createdBy   User           @relation(fields: [createdById], references: [id])
+  createdById String
+  steps       CampaignStep[]
+  recipients  CampaignRecipient[]
+  emailLogs   EmailLog[]
+
+  @@map("campaigns")
+}
+
+model CampaignStep {
+  id         String   @id @default(cuid())
+  stepOrder  Int      // 0 = initial email, 1 = follow-up 1, ...
+  delayDays  Int      @default(0) // days after previous step
+  subject    String
+  body       String   @db.Text
+  createdAt  DateTime @default(now())
+
+  // Relations
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  @@unique([campaignId, stepOrder])
+  @@map("campaign_steps")
+}
+
+model CampaignRecipient {
+  id          String      @id @default(cuid())
+  currentStep Int         @default(0)
+  status      EmailStatus @default(DRAFT)
+  nextSendAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+  contact    Contact  @relation(fields: [contactId], references: [id])
+  contactId  String
+
+  @@unique([campaignId, contactId])
+  @@index([status])
+  @@index([nextSendAt])
+  @@map("campaign_recipients")
+}
+
 // ─── EMAIL LOGS (Phase 2-3) ──────────────────────────────
 
 model EmailLog {
-  id         String    @id @default(cuid())
+  id         String      @id @default(cuid())
   subject    String
-  body       String?
-  sentAt     DateTime  @default(now())
+  body       String?     @db.Text
+  status     EmailStatus @default(SENT)
+  stepOrder  Int?
+  sentAt     DateTime    @default(now())
   openedAt   DateTime?
   repliedAt  DateTime?
   bouncedAt  DateTime?
-  campaignId String?
-  metadata   Json?     // Apollo tracking data
-  createdAt  DateTime  @default(now())
+  trackToken String?     @unique // for open/click tracking
+  metadata   Json?       // tracking data
+  createdAt  DateTime    @default(now())
 
   // Relations
-  contact   Contact @relation(fields: [contactId], references: [id])
-  contactId String
+  contact    Contact  @relation(fields: [contactId], references: [id])
+  contactId  String
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  campaignId String?
 
   @@index([contactId])
   @@index([campaignId])
+  @@index([trackToken])
   @@map("email_logs")
 }
 

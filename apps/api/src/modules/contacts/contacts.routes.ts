@@ -203,12 +203,18 @@ export async function contactRoutes(server: FastifyInstance) {
     async (request) => {
       const { contactIds, contactStatus } = bulkStatusSchema.parse(request.body);
 
-      await prisma.contact.updateMany({
-        where: { id: { in: contactIds } },
+      // BD_STAFF can only update their own assigned contacts
+      const where: Prisma.ContactWhereInput = { id: { in: contactIds } };
+      if (request.user.role === "BD_STAFF") {
+        where.assignedToId = request.user.id;
+      }
+
+      const result = await prisma.contact.updateMany({
+        where,
         data: { contactStatus },
       });
 
-      return { updated: contactIds.length };
+      return { updated: result.count };
     }
   );
 

@@ -65,6 +65,17 @@ export const HELP_TEXT = `<b>Xperise BD Bot</b> - Trợ lý Sales Team
 /cold - Leads nguội (> ${COLD_DAYS_THRESHOLD} ngày chưa touch)
 /help - Xem hướng dẫn
 
+<b>Apollo Lead Search:</b>
+/find &lt;title&gt; [industry] [location] - Tìm leads mới
+
+<i>Ví dụ:</i>
+<code>/find CFO Banking Vietnam</code>
+<code>/find CHRO FMCG</code>
+
+<b>Campaign Approval (ADMIN/MANAGER):</b>
+/approve &lt;campaignId&gt; - Duyệt tất cả emails
+/reject &lt;campaignId&gt; [lý do] - Từ chối emails
+
 <b>Cập nhật nhanh trong group:</b>
 <code>[Tên công ty] Nội dung update...</code>
 

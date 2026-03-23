@@ -10,6 +10,7 @@ import {
   Building2,
   TrendingUp,
   Mail,
+  Search,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -19,7 +20,8 @@ const navigation = [
   { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Companies", href: "/companies", icon: Building2 },
   { name: "Pipelines", href: "/pipelines", icon: TrendingUp },
-  { name: "Campaigns", href: "/campaigns", icon: Mail, disabled: true },
+  { name: "Apollo", href: "/apollo", icon: Search },
+  { name: "Campaigns", href: "/campaigns", icon: Mail },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
