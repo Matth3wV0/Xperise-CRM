@@ -40,6 +40,7 @@ export function TelegramConnect() {
   const [groups, setGroups] = useState<TelegramGroup[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [activateError, setActivateError] = useState<string | null>(null);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -99,13 +100,15 @@ export function TelegramConnect() {
 
   async function handleActivateGroup(groupId: string) {
     setActivating(true);
+    setActivateError(null);
     try {
       await apiPut(`/telegram/groups/${groupId}/activate`, {});
       setGroups((prev) =>
         prev.map((g) => ({ ...g, isActive: g.id === groupId }))
       );
     } catch (err) {
-      console.error("Failed to activate group:", err);
+      const msg = err instanceof Error ? err.message : "Lỗi không xác định";
+      setActivateError(msg);
     }
     setActivating(false);
   }
@@ -281,6 +284,12 @@ export function TelegramConnect() {
                 {!activeGroup && groups.length > 0 && (
                   <p className="text-xs text-amber-400">
                     Chưa chọn group. Cron jobs và thông báo sẽ dùng env var mặc định.
+                  </p>
+                )}
+
+                {activateError && (
+                  <p className="text-xs text-destructive">
+                    Lỗi: {activateError}
                   </p>
                 )}
               </div>
