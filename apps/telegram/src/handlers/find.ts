@@ -14,6 +14,7 @@ import { parseFindQuery, searchApolloLeads, type ApolloPersonResult } from "../l
  *   /find Head of Finance Manufacturing
  */
 export async function handleFind(ctx: Context) {
+  try {
   const telegramId = String(ctx.from?.id);
   const binding = await prisma.telegramBinding.findUnique({
     where: { telegramId },
@@ -111,6 +112,10 @@ export async function handleFind(ctx: Context) {
       `❌ Lỗi khi gọi Apollo: ${errMsg}`,
       { parse_mode: "HTML" }
     );
+  }
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : "Lỗi không xác định";
+    await ctx.reply(`❌ Lỗi: ${errMsg}`, { parse_mode: "HTML" });
   }
 }
 
