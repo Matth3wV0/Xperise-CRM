@@ -119,14 +119,37 @@ export async function handleFind(ctx: Context) {
   }
 }
 
+/** Decode numeric/named HTML entities that Apollo may embed in name fields. */
+function decodeEntities(str: string): string {
+  return str
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
+}
+
+/** Normalize a string from Apollo: decode entities, NFC-normalize combining chars, escape for Telegram HTML. */
+function normalizeName(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return decodeEntities(raw)
+    .normalize("NFC")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function formatPersonEntry(index: number, p: ApolloPersonResult): string {
   const org = p.organization;
-  const fullName = p.name || `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Unknown";
+  const rawName = p.name || `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Unknown";
+  const fullName = normalizeName(rawName);
   let entry = `<b>${index}. ${fullName}</b>\n`;
-  if (p.title) entry += `   ${p.title}\n`;
+  if (p.title) entry += `   ${normalizeName(p.title)}\n`;
   if (org?.name) {
-    entry += `   🏢 ${org.name}`;
-    if (org.industry) entry += ` (${org.industry})`;
+    entry += `   🏢 ${normalizeName(org.name)}`;
+    if (org.industry) entry += ` (${normalizeName(org.industry)})`;
     if (org.estimated_num_employees) entry += ` · ${org.estimated_num_employees.toLocaleString()} emp`;
     entry += "\n";
   }
