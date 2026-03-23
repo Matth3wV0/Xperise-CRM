@@ -121,7 +121,8 @@ export async function handleFind(ctx: Context) {
 
 function formatPersonEntry(index: number, p: ApolloPersonResult): string {
   const org = p.organization;
-  let entry = `<b>${index}. ${p.name}</b>\n`;
+  const fullName = p.name || `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Unknown";
+  let entry = `<b>${index}. ${fullName}</b>\n`;
   if (p.title) entry += `   ${p.title}\n`;
   if (org?.name) {
     entry += `   🏢 ${org.name}`;
