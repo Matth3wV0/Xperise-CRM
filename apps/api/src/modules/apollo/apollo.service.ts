@@ -98,7 +98,9 @@ export async function searchPeople(
     body.person_titles = filters.personTitles;
   }
   if (filters.organizationIndustries?.length) {
-    body.organization_industries = filters.organizationIndustries;
+    body.organization_industries = filters.organizationIndustries.map((i) =>
+      i.toLowerCase()
+    );
   }
   if (filters.employeeRanges?.length) {
     body.organization_num_employees_ranges = filters.employeeRanges;

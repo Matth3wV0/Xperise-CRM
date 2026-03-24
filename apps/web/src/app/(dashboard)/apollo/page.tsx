@@ -409,7 +409,11 @@ export default function ApolloPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium truncate">
-                        {person.name}
+                        {person.name ||
+                          [person.first_name, person.last_name]
+                            .filter(Boolean)
+                            .join(" ") ||
+                          "Unknown"}
                       </p>
                       {person.email_status && (
                         <Badge
