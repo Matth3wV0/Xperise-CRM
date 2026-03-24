@@ -1,8 +1,9 @@
 services:
+  # ── API Web Service ──────────────────────────────────────────────────────────
   - type: web
-    name: xperise-crm
+    name: xperise-api
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./apps/api/Dockerfile
     plan: free
     healthCheckPath: /health
     envVars:
@@ -10,13 +11,40 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: APOLLO_API_KEY
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_GROUP_CHAT_ID
         sync: false
-      - key: APOLLO_API_KEY
+      - key: ANTHROPIC_API_KEY
         sync: false
       - key: NODE_ENV
         value: production
-      - key: FRONTEND_URL
+
+  # ── Telegram Bot Background Worker ───────────────────────────────────────────
+  # type: worker — no port binding required, Render won't scan for open ports
+  - type: worker
+    name: xperise-bot
+    runtime: docker
+    dockerfilePath: ./apps/telegram/Dockerfile
+    plan: free
+    envVars:
+      - key: DATABASE_URL
         sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_GROUP_CHAT_ID
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false
+      - key: API_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
