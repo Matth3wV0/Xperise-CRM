@@ -1,10 +1,13 @@
 export const STATUS_LABELS: Record<string, string> = {
-  NO_CONTACT: "Chưa liên hệ",
-  CONTACT: "Đã có contact",
-  REACHED: "Đã tiếp cận",
-  FOLLOW_UP: "Follow-up",
-  MEETING_BOOKED: "Đã đặt meeting",
-  CONVERTED: "Đã convert",
+  NO_CONTACT: "Target List",
+  CONTACT: "Contact Found",
+  REACHED: "First Touch",
+  FOLLOW_UP: "Engaged",
+  MEETING_BOOKED: "Meeting Booked",
+  MET: "Met",
+  NURTURE: "Nurture",
+  LOST: "Lost",
+  CONVERTED: "Converted",
 };
 
 export const STATUS_EMOJI: Record<string, string> = {
@@ -12,7 +15,10 @@ export const STATUS_EMOJI: Record<string, string> = {
   CONTACT: "🟡",
   REACHED: "🟠",
   FOLLOW_UP: "🔵",
-  MEETING_BOOKED: "🟢",
+  MEETING_BOOKED: "🟣",
+  MET: "🟢",
+  NURTURE: "💤",
+  LOST: "❌",
   CONVERTED: "✅",
 };
 
@@ -21,6 +27,7 @@ export const ACTION_LABELS: Record<string, string> = {
   EMAIL_FOLLOW_UP: "📧 Email follow-up",
   LINKEDIN_MESSAGE: "💼 LinkedIn msg",
   LINKEDIN_CONNECT: "💼 LinkedIn connect",
+  LINKEDIN_ACCEPTED: "💼 LinkedIn accepted",
   PHONE_CALL: "📞 Gọi điện",
   MEETING: "🤝 Meeting",
   NOTE: "📝 Note",
@@ -31,12 +38,15 @@ export const ACTION_LABELS: Record<string, string> = {
 export const COLD_DAYS_THRESHOLD = 7;
 export const VERY_COLD_DAYS = 14;
 
-// Statuses that a user can change to (excludes NO_CONTACT)
+// Statuses that a user can transition TO via inline keyboard
 export const ACTIONABLE_STATUSES = [
   "CONTACT",
   "REACHED",
   "FOLLOW_UP",
   "MEETING_BOOKED",
+  "MET",
+  "NURTURE",
+  "LOST",
   "CONVERTED",
 ] as const;
 

@@ -1,13 +1,49 @@
-// ─── Contact Status Pipeline ────────────────────────────
+// ─── Contact Status Pipeline (matches Sales_Process_Architecture_v3) ──
 
 export const CONTACT_STATUSES = [
-  { value: "NO_CONTACT", label: "0. No Contact", labelVi: "0. Chưa liên hệ", probability: 0 },
-  { value: "CONTACT", label: "1. Contact", labelVi: "1. Đã liên hệ", probability: 0.1 },
-  { value: "REACHED", label: "2. Reached", labelVi: "2. Đã tiếp cận", probability: 0.5 },
-  { value: "FOLLOW_UP", label: "3. Follow-up", labelVi: "3. Theo dõi", probability: 0.7 },
-  { value: "MEETING_BOOKED", label: "4. Meeting Booked", labelVi: "4. Đã đặt lịch", probability: 0.9 },
-  { value: "CONVERTED", label: "5. Converted", labelVi: "5. Chuyển đổi", probability: 1.0 },
+  { value: "NO_CONTACT", label: "0. Target List", labelVi: "0. Danh sách mục tiêu", probability: 0 },
+  { value: "CONTACT", label: "1. Contact Found", labelVi: "1. Đã tìm contact", probability: 0.05 },
+  { value: "REACHED", label: "2. First Touch", labelVi: "2. Đã tiếp cận", probability: 0.1 },
+  { value: "FOLLOW_UP", label: "3. Engaged", labelVi: "3. Đã phản hồi", probability: 0.3 },
+  { value: "MEETING_BOOKED", label: "4. Meeting Booked", labelVi: "4. Đã đặt meeting", probability: 0.5 },
+  { value: "MET", label: "5. Met", labelVi: "5. Đã meeting", probability: 0.7 },
+  { value: "NURTURE", label: "6. Nurture", labelVi: "6. Nuôi dưỡng", probability: 0.1 },
+  { value: "LOST", label: "6. Lost", labelVi: "6. Đã mất", probability: 0 },
+  { value: "CONVERTED", label: "7. Converted", labelVi: "7. Chuyển đổi", probability: 1.0 },
 ] as const;
+
+// ─── Stage SLA Configuration ──────────────────────────────
+// From Sales_Process_Architecture_v3 Section 2.4
+
+export const STAGE_SLA: Record<string, {
+  days: number | null;
+  label: string;
+  escalationDays: number | null;
+  escalationLabel: string;
+}> = {
+  NO_CONTACT:     { days: 7,    label: "7 ngày",        escalationDays: 14,   escalationLabel: "Highlight trên dashboard" },
+  CONTACT:        { days: 5,    label: "5 ngày",        escalationDays: 10,   escalationLabel: "Cảnh báo bỏ quên" },
+  REACHED:        { days: 3,    label: "3 ngày/bước",   escalationDays: 14,   escalationLabel: "Đổi channel hoặc contact" },
+  FOLLOW_UP:      { days: 1,    label: "24 giờ",        escalationDays: 2,    escalationLabel: "Cảnh báo đỏ" },
+  MEETING_BOOKED: { days: null, label: "Tới ngày meeting", escalationDays: null, escalationLabel: "Reschedule > 2 lần → flag" },
+  MET:            { days: 7,    label: "7 ngày",        escalationDays: 14,   escalationLabel: "Deal cooling" },
+  NURTURE:        { days: 30,   label: "30 ngày",       escalationDays: 90,   escalationLabel: "Check-in lần nữa" },
+  LOST:           { days: null, label: "N/A",           escalationDays: null, escalationLabel: "N/A" },
+  CONVERTED:      { days: null, label: "N/A",           escalationDays: null, escalationLabel: "N/A" },
+};
+
+// Active stages that participate in SLA tracking (exclude terminal states)
+export const SLA_TRACKED_STATUSES = [
+  "NO_CONTACT", "CONTACT", "REACHED", "FOLLOW_UP", "MEETING_BOOKED", "MET",
+] as const;
+
+// Statuses considered "active" in pipeline (not terminal)
+export const ACTIVE_STATUSES = [
+  "CONTACT", "REACHED", "FOLLOW_UP", "MEETING_BOOKED", "MET",
+] as const;
+
+// Terminal/inactive statuses
+export const TERMINAL_STATUSES = ["NURTURE", "LOST", "CONVERTED"] as const;
 
 // ─── Deal Stages ────────────────────────────────────────
 
@@ -68,6 +104,7 @@ export const ACTION_TYPES = [
   { value: "EMAIL_FOLLOW_UP", label: "Email Follow-up", labelVi: "Follow-up email" },
   { value: "LINKEDIN_MESSAGE", label: "LinkedIn Message", labelVi: "Tin nhắn LinkedIn" },
   { value: "LINKEDIN_CONNECT", label: "LinkedIn Connect", labelVi: "Kết nối LinkedIn" },
+  { value: "LINKEDIN_ACCEPTED", label: "LinkedIn Accepted", labelVi: "LinkedIn đã accept" },
   { value: "PHONE_CALL", label: "Phone Call", labelVi: "Gọi điện" },
   { value: "MEETING", label: "Meeting", labelVi: "Họp" },
   { value: "NOTE", label: "Note", labelVi: "Ghi chú" },

@@ -80,7 +80,7 @@ async function gatherBriefContext(userId: string, role: string): Promise<string>
   const coldLeads = await prisma.contact.findMany({
     where: {
       ...contactWhere,
-      contactStatus: { notIn: ["CONVERTED", "NO_CONTACT"] },
+      contactStatus: { notIn: ["CONVERTED", "NO_CONTACT", "LOST"] },
       OR: [{ lastTouchedAt: { lt: sevenDaysAgo } }, { lastTouchedAt: null }],
     },
     include: { company: { select: { name: true } } },

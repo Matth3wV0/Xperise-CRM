@@ -149,9 +149,15 @@ export async function contactRoutes(server: FastifyInstance) {
         return reply.status(403).send({ error: "Can only edit assigned contacts" });
       }
 
+      // Track stage change timestamp
+      const updateData: any = { ...data };
+      if (data.contactStatus && data.contactStatus !== existing.contactStatus) {
+        updateData.stageChangedAt = new Date();
+      }
+
       const contact = await prisma.contact.update({
         where: { id: request.params.id },
-        data,
+        data: updateData,
         include: {
           company: { select: { id: true, name: true } },
         },
@@ -211,7 +217,7 @@ export async function contactRoutes(server: FastifyInstance) {
 
       const result = await prisma.contact.updateMany({
         where,
-        data: { contactStatus },
+        data: { contactStatus, stageChangedAt: new Date() },
       });
 
       return { updated: result.count };

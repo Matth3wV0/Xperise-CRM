@@ -274,7 +274,7 @@ export async function handleCallback(ctx: Context) {
     await prisma.$transaction([
       prisma.contact.update({
         where: { id: contactId },
-        data: { contactStatus: newStatus as any, lastTouchedAt: new Date() },
+        data: { contactStatus: newStatus as any, lastTouchedAt: new Date(), stageChangedAt: new Date() },
       }),
       prisma.contactAction.create({
         data: {

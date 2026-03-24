@@ -12,12 +12,15 @@ interface ContactFunnelProps {
 }
 
 const STATUS_STYLES: Record<string, { bar: string; text: string; dot: string }> = {
-  NO_CONTACT: { bar: "bg-zinc-600", text: "text-zinc-400", dot: "bg-zinc-500" },
-  CONTACT:    { bar: "bg-blue-500", text: "text-blue-400", dot: "bg-blue-500" },
-  REACHED:    { bar: "bg-amber-500", text: "text-amber-400", dot: "bg-amber-500" },
-  FOLLOW_UP:  { bar: "bg-orange-500", text: "text-orange-400", dot: "bg-orange-500" },
+  NO_CONTACT:     { bar: "bg-zinc-600", text: "text-zinc-400", dot: "bg-zinc-500" },
+  CONTACT:        { bar: "bg-blue-500", text: "text-blue-400", dot: "bg-blue-500" },
+  REACHED:        { bar: "bg-amber-500", text: "text-amber-400", dot: "bg-amber-500" },
+  FOLLOW_UP:      { bar: "bg-orange-500", text: "text-orange-400", dot: "bg-orange-500" },
   MEETING_BOOKED: { bar: "bg-violet-500", text: "text-violet-400", dot: "bg-violet-500" },
-  CONVERTED:  { bar: "bg-emerald-500", text: "text-emerald-400", dot: "bg-emerald-500" },
+  MET:            { bar: "bg-green-500", text: "text-green-400", dot: "bg-green-500" },
+  NURTURE:        { bar: "bg-sky-500", text: "text-sky-400", dot: "bg-sky-500" },
+  LOST:           { bar: "bg-red-500", text: "text-red-400", dot: "bg-red-500" },
+  CONVERTED:      { bar: "bg-emerald-500", text: "text-emerald-400", dot: "bg-emerald-500" },
 };
 
 export function ContactFunnel({ data }: ContactFunnelProps) {

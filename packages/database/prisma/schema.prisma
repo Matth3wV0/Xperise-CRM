@@ -79,12 +79,15 @@ model Company {
   size          CompanySize?
   employeeCount String?
   annualSpend   String?
-  fitScore      Int?        @db.SmallInt // 1-5
-  primaryUseCase String?
-  website       String?
-  notes         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  fitScore        Int?        @db.SmallInt // 1-5
+  primaryUseCase  String?
+  website         String?
+  digitalMaturity String?     // Low, Mid, Advanced — from research
+  hqLocation      String?     // HQ city/region
+  tags            String[]    // Flexible tags for categorization
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   // Relations
   contacts  Contact[]
@@ -96,12 +99,15 @@ model Company {
 // ─── CONTACTS ────────────────────────────────────────────
 
 enum ContactStatus {
-  NO_CONTACT       // 0. No Contact
-  CONTACT          // 1. Contact
-  REACHED          // 2. Reached
-  FOLLOW_UP        // 3. Follow-up
-  MEETING_BOOKED   // 4. Meeting Booked
-  CONVERTED        // 5. Converted
+  NO_CONTACT       // 0. Target List — company identified, finding contacts
+  CONTACT          // 1. Contact Identified — have name+title, not yet approached
+  REACHED          // 2. First Touch — sent first email/LinkedIn/call
+  FOLLOW_UP        // 3. Engaged — lead responded (reply, accept, call back)
+  MEETING_BOOKED   // 4. Meeting Booked — confirmed meeting scheduled
+  MET              // 5. Met — meeting done, follow-up / nurturing
+  NURTURE          // 6a. Nurture — not ready now, revisit later (30/60/90d)
+  LOST             // 6b. Lost — explicitly declined
+  CONVERTED        // 7. Converted — deal created in Pipeline
 }
 
 enum ContactSource {
@@ -135,6 +141,7 @@ model Contact {
   priority        Int               @default(3) @db.SmallInt // 1-5
   type            ContactType       @default(HUNTING)
   contactStatus   ContactStatus     @default(NO_CONTACT)
+  stageChangedAt  DateTime?         // When contactStatus last changed — for SLA tracking
   emailVerify     EmailVerifyStatus @default(UNKNOWN)
   notes           String?
   lastTouchedAt   DateTime?         // Updated when any ContactAction is logged
@@ -167,6 +174,7 @@ enum ActionType {
   EMAIL_FOLLOW_UP
   LINKEDIN_MESSAGE
   LINKEDIN_CONNECT
+  LINKEDIN_ACCEPTED
   PHONE_CALL
   MEETING
   NOTE

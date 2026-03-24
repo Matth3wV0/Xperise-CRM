@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Search, Building2, Users, TrendingUp } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import { INDUSTRIES } from "@xperise/shared";
@@ -46,6 +47,7 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 export default function CompaniesPage() {
+  const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -162,6 +164,7 @@ export default function CompaniesPage() {
                     <tr
                       key={company.id}
                       className="hover:bg-accent/50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/companies/${company.id}`)}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">

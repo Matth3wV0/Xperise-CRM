@@ -32,7 +32,7 @@ export async function handleCold(ctx: Context) {
   const contacts = await prisma.contact.findMany({
     where: {
       ...assignFilter,
-      contactStatus: { notIn: ["CONVERTED", "NO_CONTACT"] as any[] },
+      contactStatus: { notIn: ["CONVERTED", "NO_CONTACT", "LOST"] as any[] },
       OR: [
         { lastTouchedAt: { lt: thresholdDate } },
         { lastTouchedAt: null },

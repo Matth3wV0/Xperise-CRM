@@ -90,7 +90,7 @@ async function gatherContext(question: string, role: string, userId: string): Pr
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const coldLeads = await prisma.contact.findMany({
       where: {
-        contactStatus: { notIn: ["CONVERTED", "NO_CONTACT"] },
+        contactStatus: { notIn: ["CONVERTED", "NO_CONTACT", "LOST"] },
         OR: [
           { lastTouchedAt: { lt: sevenDaysAgo } },
           { lastTouchedAt: null },

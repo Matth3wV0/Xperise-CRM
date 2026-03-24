@@ -6,15 +6,29 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { ContactFunnel } from "@/components/dashboard/contact-funnel";
 import { RecentActions } from "@/components/dashboard/recent-actions";
 import { OutreachStats } from "@/components/dashboard/outreach-stats";
+import { ActionRequired } from "@/components/dashboard/action-required";
+import { ProgressTab } from "@/components/dashboard/progress-tab";
+import { OutreachAnalyticsTab } from "@/components/dashboard/outreach-analytics-tab";
+import { TeamActivityTab } from "@/components/dashboard/team-activity-tab";
 import { apiGet } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatCurrency } from "@/lib/utils";
+
+interface PeriodComparison {
+  current: number;
+  previous: number;
+}
 
 interface DashboardStats {
   totalContacts: number;
   totalCompanies: number;
   contactsByStatus: Record<string, number>;
   totalPipelineRevenue: string;
+  comparison?: {
+    newContacts: PeriodComparison;
+    activities: PeriodComparison;
+    meetings: PeriodComparison;
+  };
 }
 
 interface FunnelItem {
@@ -50,31 +64,44 @@ interface OutreachData {
   }[];
 }
 
+type Tab = "overview" | "progress" | "outreach" | "team";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "progress", label: "Progress" },
+  { key: "outreach", label: "Outreach Analytics" },
+  { key: "team", label: "Team Activity" },
+];
+
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-lg bg-secondary ${className ?? ""}`} />;
 }
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [funnel, setFunnel] = useState<FunnelItem[]>([]);
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [outreach, setOutreach] = useState<OutreachData | null>(null);
+  const [actionRequired, setActionRequired] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [statsRes, funnelRes, actionsRes, outreachRes] = await Promise.all([
+        const [statsRes, funnelRes, actionsRes, outreachRes, actionReqRes] = await Promise.all([
           apiGet<DashboardStats>("/dashboard/stats"),
           apiGet<{ funnel: FunnelItem[] }>("/dashboard/funnel"),
           apiGet<{ actions: ActionItem[] }>("/dashboard/recent-actions"),
           apiGet<OutreachData>("/dashboard/outreach-stats").catch(() => null),
+          apiGet<{ items: any[] }>("/dashboard/action-required").catch(() => null),
         ]);
         setStats(statsRes);
         setFunnel(funnelRes.funnel);
         setActions(actionsRes.actions);
         if (outreachRes) setOutreach(outreachRes);
+        if (actionReqRes) setActionRequired(actionReqRes.items);
       } catch (err) {
         console.error("Failed to load dashboard:", err);
       } finally {
@@ -85,9 +112,18 @@ export default function DashboardPage() {
   }, []);
 
   const activeLeads =
+    (stats?.contactsByStatus?.CONTACT ?? 0) +
     (stats?.contactsByStatus?.REACHED ?? 0) +
     (stats?.contactsByStatus?.FOLLOW_UP ?? 0) +
-    (stats?.contactsByStatus?.MEETING_BOOKED ?? 0);
+    (stats?.contactsByStatus?.MEETING_BOOKED ?? 0) +
+    (stats?.contactsByStatus?.MET ?? 0);
+
+  const trendText = (comp: PeriodComparison, label: string) => {
+    const diff = comp.current - comp.previous;
+    if (diff === 0) return `${comp.current} ${label}`;
+    const arrow = diff > 0 ? "+" : "";
+    return `${comp.current} ${label} (${arrow}${diff} vs last week)`;
+  };
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -114,7 +150,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — always visible */}
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -128,6 +164,7 @@ export default function DashboardPage() {
             value={stats?.totalContacts ?? 0}
             icon={Users}
             iconColor="bg-indigo-950/60 text-indigo-400"
+            description={stats?.comparison ? trendText(stats.comparison.newContacts, "new this week") : undefined}
           />
           <StatCard
             title="Companies"
@@ -139,7 +176,7 @@ export default function DashboardPage() {
             title="Active Leads"
             value={activeLeads}
             icon={Target}
-            description="Reached, Follow-up, Meeting"
+            description={stats?.comparison ? trendText(stats.comparison.activities, "actions this week") : "Contact → Met stages"}
             iconColor="bg-amber-950/60 text-amber-400"
           />
           <StatCard
@@ -147,27 +184,61 @@ export default function DashboardPage() {
             value={formatCurrency(stats?.totalPipelineRevenue ?? "0")}
             icon={TrendingUp}
             iconColor="bg-violet-950/60 text-violet-400"
+            description={stats?.comparison ? `${stats.comparison.meetings.current} meetings this week` : undefined}
           />
         </div>
       )}
 
-      {/* Charts */}
-      {loading ? (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-[340px] rounded-xl" />
-          <Skeleton className="h-[340px] rounded-xl" />
-        </div>
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ContactFunnel data={funnel} />
-          <RecentActions actions={actions} />
-        </div>
+      {/* Tab Navigation */}
+      <div className="border-b border-border">
+        <nav className="-mb-px flex gap-6">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === tab.key
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "overview" && (
+        <>
+          {/* Charts */}
+          {loading ? (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Skeleton className="h-[340px] rounded-xl" />
+              <Skeleton className="h-[340px] rounded-xl" />
+            </div>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ContactFunnel data={funnel} />
+              <RecentActions actions={actions} />
+            </div>
+          )}
+
+          {/* Action Required */}
+          {!loading && actionRequired.length > 0 && (
+            <ActionRequired items={actionRequired} />
+          )}
+
+          {/* Outreach Performance */}
+          {!loading && outreach && (
+            <OutreachStats data={outreach} />
+          )}
+        </>
       )}
 
-      {/* Outreach Performance */}
-      {!loading && outreach && (
-        <OutreachStats data={outreach} />
-      )}
+      {activeTab === "progress" && <ProgressTab />}
+      {activeTab === "outreach" && <OutreachAnalyticsTab />}
+      {activeTab === "team" && <TeamActivityTab />}
     </div>
   );
 }

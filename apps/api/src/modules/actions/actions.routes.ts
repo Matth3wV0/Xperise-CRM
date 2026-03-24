@@ -6,7 +6,7 @@ import { authenticate, authorize } from "../../common/auth-guard";
 const createActionSchema = z.object({
   type: z.enum([
     "EMAIL_SENT", "EMAIL_FOLLOW_UP", "LINKEDIN_MESSAGE", "LINKEDIN_CONNECT",
-    "PHONE_CALL", "MEETING", "NOTE", "STATUS_CHANGE", "OTHER",
+    "LINKEDIN_ACCEPTED", "PHONE_CALL", "MEETING", "NOTE", "STATUS_CHANGE", "OTHER",
   ]),
   status: z.enum(["DONE", "FOLLOW_UP", "PENDING", "NOT_STARTED"]).default("DONE"),
   note: z.string().optional(),

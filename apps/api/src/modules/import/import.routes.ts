@@ -36,11 +36,19 @@ const VERIFY_MAP: Record<string, string> = {
 
 const STATUS_MAP: Record<string, string> = {
   "0. No Contact": "NO_CONTACT",
+  "0. Target List": "NO_CONTACT",
   "1. Contact": "CONTACT",
+  "1. Contact Found": "CONTACT",
   "2. Reached": "REACHED",
+  "2. First Touch": "REACHED",
   "3. Follow-up": "FOLLOW_UP",
+  "3. Engaged": "FOLLOW_UP",
   "4. Meeting Booked": "MEETING_BOOKED",
+  "5. Met": "MET",
   "5. Converted": "CONVERTED",
+  "6. Nurture": "NURTURE",
+  "6. Lost": "LOST",
+  "7. Converted": "CONVERTED",
 };
 
 export async function importRoutes(server: FastifyInstance) {

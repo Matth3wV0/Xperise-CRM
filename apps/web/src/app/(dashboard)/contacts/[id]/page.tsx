@@ -56,6 +56,9 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> =
   REACHED:        { bg: "bg-amber-950/60", text: "text-amber-300", dot: "bg-amber-500" },
   FOLLOW_UP:      { bg: "bg-orange-950/60", text: "text-orange-300", dot: "bg-orange-500" },
   MEETING_BOOKED: { bg: "bg-violet-950/60", text: "text-violet-300", dot: "bg-violet-500" },
+  MET:            { bg: "bg-green-950/60", text: "text-green-300", dot: "bg-green-500" },
+  NURTURE:        { bg: "bg-sky-950/60", text: "text-sky-300", dot: "bg-sky-500" },
+  LOST:           { bg: "bg-red-950/60", text: "text-red-300", dot: "bg-red-500" },
   CONVERTED:      { bg: "bg-emerald-950/60", text: "text-emerald-300", dot: "bg-emerald-500" },
 };
 

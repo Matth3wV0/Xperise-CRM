@@ -23,7 +23,7 @@ export async function sendColdLeadDigest(bot: Bot<Context>) {
 
   const coldContacts = await prisma.contact.findMany({
     where: {
-      contactStatus: { notIn: ["CONVERTED", "NO_CONTACT"] as any[] },
+      contactStatus: { notIn: ["CONVERTED", "NO_CONTACT", "LOST"] as any[] },
       OR: [
         { lastTouchedAt: { lt: thresholdDate } },
         { lastTouchedAt: null },

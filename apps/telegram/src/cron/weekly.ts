@@ -34,7 +34,7 @@ export async function sendWeeklySummary(bot: Bot<Context>) {
     }),
     prisma.contact.count({
       where: {
-        contactStatus: { notIn: ["CONVERTED", "NO_CONTACT"] as any[] },
+        contactStatus: { notIn: ["CONVERTED", "NO_CONTACT", "LOST"] as any[] },
         OR: [
           { lastTouchedAt: { lt: coldThreshold } },
           { lastTouchedAt: null },

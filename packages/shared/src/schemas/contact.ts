@@ -9,7 +9,7 @@ export const createContactSchema = z.object({
   source: z.enum(["CURRENT_XPERISE", "DESK_RESEARCH", "PERSONAL_REFERRAL", "APOLLO", "OTHER"]),
   priority: z.number().int().min(1).max(5).default(3),
   type: z.enum(["SNIPING", "HUNTING"]),
-  contactStatus: z.enum(["NO_CONTACT", "CONTACT", "REACHED", "FOLLOW_UP", "MEETING_BOOKED", "CONVERTED"]).default("NO_CONTACT"),
+  contactStatus: z.enum(["NO_CONTACT", "CONTACT", "REACHED", "FOLLOW_UP", "MEETING_BOOKED", "MET", "NURTURE", "LOST", "CONVERTED"]).default("NO_CONTACT"),
   emailVerify: z.enum(["VALID", "INVALID", "UNKNOWN", "ACCEPT_ALL"]).default("UNKNOWN"),
   companyId: z.string().min(1, "Company is required"),
   assignedToId: z.string().optional(),
@@ -20,7 +20,7 @@ export const updateContactSchema = createContactSchema.partial();
 
 export const bulkStatusSchema = z.object({
   contactIds: z.array(z.string()).min(1),
-  contactStatus: z.enum(["NO_CONTACT", "CONTACT", "REACHED", "FOLLOW_UP", "MEETING_BOOKED", "CONVERTED"]),
+  contactStatus: z.enum(["NO_CONTACT", "CONTACT", "REACHED", "FOLLOW_UP", "MEETING_BOOKED", "MET", "NURTURE", "LOST", "CONVERTED"]),
 });
 
 export const bulkAssignSchema = z.object({
