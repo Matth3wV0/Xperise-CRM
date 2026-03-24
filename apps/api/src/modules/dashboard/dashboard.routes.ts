@@ -6,10 +6,16 @@ export async function dashboardRoutes(server: FastifyInstance) {
   server.addHook("preHandler", authenticate);
 
   // GET /dashboard/stats — with week-over-week comparison
-  server.get("/stats", async () => {
+  server.get("/stats", async (request) => {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 86400000);
     const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000);
+
+    // BD_STAFF only sees their own contacts (mirrors contacts.routes.ts logic)
+    const contactWhere =
+      request.user.role === "BD_STAFF"
+        ? { assignedToId: request.user.id }
+        : {};
 
     const [
       totalContacts,
@@ -24,16 +30,16 @@ export async function dashboardRoutes(server: FastifyInstance) {
       meetingsThisWeek,
       meetingsLastWeek,
     ] = await Promise.all([
-      prisma.contact.count(),
+      prisma.contact.count({ where: contactWhere }),
       prisma.company.count(),
-      prisma.contact.groupBy({ by: ["contactStatus"], _count: true }),
+      prisma.contact.groupBy({ by: ["contactStatus"], _count: true, where: contactWhere }),
       prisma.pipeline.aggregate({
         _sum: { totalRevenue: true },
         where: { dealStage: { notIn: ["CLOSED_LOST"] } },
       }),
       // This week
-      prisma.contact.count({ where: { createdAt: { gte: weekAgo } } }),
-      prisma.contact.count({ where: { createdAt: { gte: twoWeeksAgo, lt: weekAgo } } }),
+      prisma.contact.count({ where: { ...contactWhere, createdAt: { gte: weekAgo } } }),
+      prisma.contact.count({ where: { ...contactWhere, createdAt: { gte: twoWeeksAgo, lt: weekAgo } } }),
       prisma.contactAction.count({ where: { performedAt: { gte: weekAgo } } }),
       prisma.contactAction.count({ where: { performedAt: { gte: twoWeeksAgo, lt: weekAgo } } }),
       prisma.contactAction.count({
