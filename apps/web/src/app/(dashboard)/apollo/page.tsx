@@ -348,7 +348,7 @@ export default function ApolloPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-base">
-                Results ({results.pagination.total_entries} found)
+                Results ({results.pagination.total_entries || results.people.length} found)
               </CardTitle>
               <CardDescription>
                 Page {results.pagination.page} of{" "}
