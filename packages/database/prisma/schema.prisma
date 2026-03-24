@@ -45,6 +45,7 @@ model User {
   auditLogs        AuditLog[]
   telegramBinding  TelegramBinding?
   campaigns        Campaign[]
+  agentRuns        AgentRun[]
 
   @@map("users")
 }
@@ -139,6 +140,7 @@ model Contact {
   lastTouchedAt   DateTime?         // Updated when any ContactAction is logged
   enrichmentData  Json?             // Apollo enrichment cache — check before calling API
   nextActionAt    DateTime?         // Next scheduled follow-up
+  apolloContactId String?           // Apollo.io contact ID (needed for sequences)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -256,11 +258,12 @@ enum EmailStatus {
 }
 
 model Campaign {
-  id          String         @id @default(cuid())
-  name        String
-  status      CampaignStatus @default(DRAFT)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  name              String
+  status            CampaignStatus @default(DRAFT)
+  apolloSequenceId  String?        // Apollo.io sequence ID (linked after first sync)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   // Relations
   createdBy   User           @relation(fields: [createdById], references: [id])
@@ -311,18 +314,19 @@ model CampaignRecipient {
 // ─── EMAIL LOGS (Phase 2-3) ──────────────────────────────
 
 model EmailLog {
-  id         String      @id @default(cuid())
-  subject    String
-  body       String?     @db.Text
-  status     EmailStatus @default(SENT)
-  stepOrder  Int?
-  sentAt     DateTime    @default(now())
-  openedAt   DateTime?
-  repliedAt  DateTime?
-  bouncedAt  DateTime?
-  trackToken String?     @unique // for open/click tracking
-  metadata   Json?       // tracking data
-  createdAt  DateTime    @default(now())
+  id              String      @id @default(cuid())
+  subject         String
+  body            String?     @db.Text
+  status          EmailStatus @default(SENT)
+  stepOrder       Int?
+  sentAt          DateTime    @default(now())
+  openedAt        DateTime?
+  repliedAt       DateTime?
+  bouncedAt       DateTime?
+  trackToken      String?     @unique // for open/click tracking
+  apolloMessageId String?     @unique // Apollo emailer_message ID for stats polling
+  metadata        Json?       // tracking data
+  createdAt       DateTime    @default(now())
 
   // Relations
   contact    Contact  @relation(fields: [contactId], references: [id])
@@ -415,4 +419,75 @@ model ColdLeadAlert {
   @@index([contactId])
   @@index([sentAt])
   @@map("cold_lead_alerts")
+}
+
+// ─── AI AGENTS (Phase 3) ─────────────────────────────────
+
+enum AgentType {
+  HUNTER
+  WRITER
+  TRACKER
+  STRATEGIST
+}
+
+enum AgentRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AgentActionStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  EXECUTED
+  FAILED
+}
+
+model AgentRun {
+  id            String         @id @default(cuid())
+  agentType     AgentType
+  status        AgentRunStatus @default(RUNNING)
+  trigger       String         // "cron", "telegram:/find", "manual"
+  inputSummary  String?        @db.Text
+  outputSummary String?        @db.Text
+  tokensUsed    Int            @default(0)
+  costUsd       Float          @default(0)
+  startedAt     DateTime       @default(now())
+  endedAt       DateTime?
+  error         String?        @db.Text
+  metadata      Json?
+
+  // Relations
+  triggeredBy   User?         @relation(fields: [triggeredById], references: [id])
+  triggeredById String?
+  actions       AgentAction[]
+
+  @@index([agentType])
+  @@index([status])
+  @@index([startedAt])
+  @@map("agent_runs")
+}
+
+model AgentAction {
+  id           String            @id @default(cuid())
+  actionType   String            // "search_leads", "enrich_contact", "draft_email", "send_linkedin", etc.
+  status       AgentActionStatus @default(PENDING_APPROVAL)
+  targetEntity String?           // "contact", "company", "campaign"
+  targetId     String?           // entity ID
+  payload      Json              // full action details
+  result       Json?             // execution result
+  approvedById String?           // who approved (Telegram user)
+  createdAt    DateTime          @default(now())
+  executedAt   DateTime?
+
+  // Relations
+  agentRun   AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+  agentRunId String
+
+  @@index([agentRunId])
+  @@index([status])
+  @@index([actionType])
+  @@map("agent_actions")
 }

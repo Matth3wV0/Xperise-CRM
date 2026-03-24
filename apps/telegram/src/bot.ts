@@ -8,6 +8,10 @@ import { handleGroupMessage } from "./handlers/message.js";
 import { handleCallback } from "./handlers/callback.js";
 import { handleFind } from "./handlers/find.js";
 import { handleApprove, handleReject } from "./handlers/approve.js";
+import { handleCampaign } from "./handlers/campaign.js";
+import { handleAi } from "./handlers/ai.js";
+import { handleBrief } from "./handlers/brief.js";
+import { handleDraft } from "./handlers/draft.js";
 import { HELP_TEXT } from "./lib/formatter.js";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -30,9 +34,15 @@ bot.command("help", async (ctx) => {
 // ── Apollo lead search ───────────────────────────────────────────────────────
 bot.command("find", handleFind);
 
-// ── Campaign approval ────────────────────────────────────────────────────────
+// ── Campaign stats + approval ────────────────────────────────────────────────
+bot.command("campaign", handleCampaign);
 bot.command("approve", handleApprove);
 bot.command("reject", handleReject);
+
+// ── AI commands (Phase 3) ────────────────────────────────────────────────────
+bot.command("ai", handleAi);
+bot.command("brief", handleBrief);
+bot.command("draft", handleDraft);
 
 // ── Group message handler: [Company] note pattern ───────────────────────────
 bot.on("message:text", handleGroupMessage);

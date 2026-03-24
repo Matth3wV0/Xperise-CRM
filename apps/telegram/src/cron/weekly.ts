@@ -3,6 +3,9 @@ import { prisma } from "@xperise/database";
 import { VERY_COLD_DAYS } from "../lib/formatter.js";
 import { getActiveGroupChatId } from "../lib/active-group.js";
 
+const API_URL = process.env.API_URL ?? "http://localhost:4000";
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY ?? "";
+
 export async function sendWeeklySummary(bot: Bot<Context>) {
   const groupChatId = await getActiveGroupChatId();
   if (!groupChatId) {
@@ -97,5 +100,36 @@ export async function sendWeeklySummary(bot: Bot<Context>) {
     await bot.api.sendMessage(groupChatId, msg, { parse_mode: "HTML" });
   } catch (err) {
     console.error("Failed to send weekly summary:", err);
+  }
+
+  // AI-enhanced weekly insights via TRACKER agent
+  if (INTERNAL_API_KEY) {
+    try {
+      const res = await fetch(`${API_URL}/ai-agents/tracker/weekly-internal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-key": INTERNAL_API_KEY,
+        },
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as { agentRunId: string };
+        const action = await prisma.agentAction.findFirst({
+          where: { agentRunId: data.agentRunId, actionType: "weekly_insights" },
+          select: { result: true },
+        });
+        const insights = (action?.result as { insights?: string })?.insights;
+        if (insights) {
+          await bot.api.sendMessage(
+            groupChatId,
+            `🤖 <b>AI Strategist — Nhận xét tuần:</b>\n\n${insights}`,
+            { parse_mode: "HTML" }
+          );
+        }
+      }
+    } catch (err) {
+      console.error("[weekly-cron] TRACKER AI insights failed:", err);
+    }
   }
 }

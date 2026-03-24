@@ -8,6 +8,9 @@ import {
 } from "../lib/formatter.js";
 import { getActiveGroupChatId } from "../lib/active-group.js";
 
+const API_URL = process.env.API_URL ?? "http://localhost:4000";
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY ?? "";
+
 export async function sendColdLeadDigest(bot: Bot<Context>) {
   const groupChatId = await getActiveGroupChatId();
   if (!groupChatId) {
@@ -71,5 +74,40 @@ export async function sendColdLeadDigest(bot: Bot<Context>) {
     await bot.api.sendMessage(groupChatId, msg, { parse_mode: "HTML" });
   } catch (err) {
     console.error("Failed to send cold lead digest:", err);
+  }
+
+  // AI-enhanced analysis via TRACKER agent
+  if (INTERNAL_API_KEY) {
+    try {
+      const res = await fetch(`${API_URL}/ai-agents/tracker/cold-internal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-key": INTERNAL_API_KEY,
+        },
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as { agentRunId: string; leadsAnalyzed: number };
+        if (data.leadsAnalyzed > 0) {
+          // The tracker agent sends analysis to the Telegram group via sendTelegramMessage
+          // We also fetch the analysis from the agent action to send a consolidated message
+          const action = await prisma.agentAction.findFirst({
+            where: { agentRunId: data.agentRunId, actionType: "analyze_cold_leads" },
+            select: { result: true },
+          });
+          const analysis = (action?.result as { analysis?: string })?.analysis;
+          if (analysis) {
+            await bot.api.sendMessage(
+              groupChatId,
+              `🤖 <b>AI Coach — Đề xuất action:</b>\n\n${analysis}`,
+              { parse_mode: "HTML" }
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[cold-lead-cron] TRACKER AI analysis failed:", err);
+    }
   }
 }

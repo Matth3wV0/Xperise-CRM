@@ -13,6 +13,11 @@ import {
   Send,
   AlertCircle,
   Clock,
+  Link2,
+  RefreshCw,
+  CheckCircle2,
+  MessageSquareReply,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +44,7 @@ interface Campaign {
   id: string;
   name: string;
   status: string;
+  apolloSequenceId: string | null;
   createdAt: string;
   createdBy: { id: string; name: string };
   steps: CampaignStep[];
@@ -53,6 +59,19 @@ interface Contact {
   email: string | null;
   position: string | null;
   company: { name: string };
+}
+
+interface ApolloSequence {
+  id: string;
+  name: string;
+  active: boolean;
+  numSteps: number;
+}
+
+interface ApolloEmailAccount {
+  id: string;
+  email: string;
+  type: string;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -102,6 +121,15 @@ export default function CampaignsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [addingRecipients, setAddingRecipients] = useState(false);
+
+  // Apollo sequence linking
+  const [apolloSequences, setApolloSequences] = useState<ApolloSequence[]>([]);
+  const [apolloAccounts, setApolloAccounts] = useState<ApolloEmailAccount[]>([]);
+  const [selectedSequenceId, setSelectedSequenceId] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [showLinkSequence, setShowLinkSequence] = useState(false);
 
   const loadCampaigns = useCallback(async () => {
     try {
@@ -218,6 +246,61 @@ export default function CampaignsPage() {
     }
   }
 
+  // ── Apollo Functions ───────────────────────────────────────────────────────
+
+  async function loadApolloData() {
+    try {
+      const [seqRes, accRes] = await Promise.all([
+        apiGet<{ sequences: ApolloSequence[] }>("/campaigns/apollo-sequences"),
+        apiGet<{ emailAccounts: ApolloEmailAccount[] }>("/campaigns/apollo-email-accounts"),
+      ]);
+      setApolloSequences(seqRes.sequences);
+      setApolloAccounts(accRes.emailAccounts);
+    } catch {}
+  }
+
+  async function handleLinkSequence() {
+    if (!selectedId || !selectedSequenceId) return;
+    setLinking(true);
+    setError("");
+    try {
+      await apiPost(`/campaigns/${selectedId}/link-sequence`, {
+        apolloSequenceId: selectedSequenceId,
+      });
+      setShowLinkSequence(false);
+      setSelectedSequenceId("");
+      loadDetail(selectedId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to link sequence");
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  async function handleSyncApollo() {
+    if (!selectedId) return;
+    setSyncing(true);
+    setError("");
+    try {
+      const result = await apiPost<{ synced: number; apolloContactsCreated: number; errors: string[] }>(
+        `/campaigns/${selectedId}/sync-apollo`,
+        selectedAccountId ? { emailAccountId: selectedAccountId } : {}
+      );
+      setError("");
+      loadDetail(selectedId);
+      loadCampaigns();
+      alert(
+        `Synced ${result.synced} contacts to Apollo.\n` +
+        `${result.apolloContactsCreated} new Apollo contacts created.\n` +
+        (result.errors.length > 0 ? `Errors: ${result.errors.join(", ")}` : "No errors.")
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sync to Apollo");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   // ── Detail View ────────────────────────────────────────────────────────────
   if (selectedId) {
     return (
@@ -279,6 +362,156 @@ export default function CampaignsPage() {
                   </div>
                 ))}
               </CardContent>
+            </Card>
+
+            {/* Apollo Sequence */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Link2 className="h-4 w-4" /> Apollo Sequence
+                  </CardTitle>
+                  <CardDescription>
+                    {detail.apolloSequenceId
+                      ? "Linked — emails will be sent via Apollo"
+                      : "Not linked — link an Apollo sequence to enable email sending"}
+                  </CardDescription>
+                </div>
+                {detail.apolloSequenceId ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default" className="text-[10px]">
+                      <CheckCircle2 className="mr-1 h-3 w-3" /> Linked
+                    </Badge>
+                    {/* Show sync button if there are APPROVED recipients */}
+                    {(detail.recipients?.some((r: any) => r.status === "APPROVED")) && (
+                      <Button
+                        size="sm"
+                        onClick={handleSyncApollo}
+                        disabled={syncing}
+                      >
+                        {syncing ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Sync to Apollo
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setShowLinkSequence(true);
+                      loadApolloData();
+                    }}
+                  >
+                    <Link2 className="mr-1 h-3.5 w-3.5" /> Link Sequence
+                  </Button>
+                )}
+              </CardHeader>
+
+              {/* Link Sequence Form */}
+              {showLinkSequence && !detail.apolloSequenceId && (
+                <CardContent className="border-t pt-4 space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Apollo Sequence</label>
+                    {apolloSequences.length === 0 ? (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        No sequences found. Create a sequence in Apollo dashboard first.
+                      </p>
+                    ) : (
+                      <select
+                        className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                        value={selectedSequenceId}
+                        onChange={(e) => setSelectedSequenceId(e.target.value)}
+                      >
+                        <option value="">Select sequence...</option>
+                        {apolloSequences.map((seq) => (
+                          <option key={seq.id} value={seq.id}>
+                            {seq.name} ({seq.numSteps} steps) {seq.active ? "" : "[inactive]"}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  {apolloAccounts.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium">Send from (optional)</label>
+                      <select
+                        className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                        value={selectedAccountId}
+                        onChange={(e) => setSelectedAccountId(e.target.value)}
+                      >
+                        <option value="">Default mailbox</option>
+                        {apolloAccounts.map((acc) => (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.email} ({acc.type})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleLinkSequence}
+                      disabled={!selectedSequenceId || linking}
+                    >
+                      {linking ? (
+                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Link2 className="mr-1 h-3.5 w-3.5" />
+                      )}
+                      Link
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowLinkSequence(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              )}
+
+              {/* Sync status + email stats when linked */}
+              {detail.apolloSequenceId && (
+                <CardContent className="border-t pt-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="rounded-lg border p-3 text-center">
+                      <Send className="h-4 w-4 mx-auto text-blue-400" />
+                      <p className="text-lg font-bold mt-1">
+                        {(detail.statusCounts?.SENT ?? 0) + (detail.statusCounts?.SENDING ?? 0) + (detail.statusCounts?.OPENED ?? 0) + (detail.statusCounts?.REPLIED ?? 0)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">Sent</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <Eye className="h-4 w-4 mx-auto text-green-400" />
+                      <p className="text-lg font-bold mt-1">
+                        {(detail.statusCounts?.OPENED ?? 0) + (detail.statusCounts?.REPLIED ?? 0)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">Opened</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <MessageSquareReply className="h-4 w-4 mx-auto text-indigo-400" />
+                      <p className="text-lg font-bold mt-1">
+                        {detail.statusCounts?.REPLIED ?? 0}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">Replied</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <XCircle className="h-4 w-4 mx-auto text-red-400" />
+                      <p className="text-lg font-bold mt-1">
+                        {detail.statusCounts?.BOUNCED ?? 0}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">Bounced</p>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
             </Card>
 
             {/* Recipients */}

@@ -5,6 +5,7 @@ import { Users, Building2, TrendingUp, Target } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ContactFunnel } from "@/components/dashboard/contact-funnel";
 import { RecentActions } from "@/components/dashboard/recent-actions";
+import { OutreachStats } from "@/components/dashboard/outreach-stats";
 import { apiGet } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatCurrency } from "@/lib/utils";
@@ -30,6 +31,25 @@ interface ActionItem {
   note?: string;
 }
 
+interface OutreachData {
+  activeCampaigns: number;
+  totalRecipients: number;
+  totalSent: number;
+  opened: number;
+  replied: number;
+  bounced: number;
+  openRate: string;
+  replyRate: string;
+  bounceRate: string;
+  recentCampaigns: {
+    id: string;
+    name: string;
+    status: string;
+    recipients: number;
+    emails: number;
+  }[];
+}
+
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-lg bg-secondary ${className ?? ""}`} />;
 }
@@ -39,19 +59,22 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [funnel, setFunnel] = useState<FunnelItem[]>([]);
   const [actions, setActions] = useState<ActionItem[]>([]);
+  const [outreach, setOutreach] = useState<OutreachData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [statsRes, funnelRes, actionsRes] = await Promise.all([
+        const [statsRes, funnelRes, actionsRes, outreachRes] = await Promise.all([
           apiGet<DashboardStats>("/dashboard/stats"),
           apiGet<{ funnel: FunnelItem[] }>("/dashboard/funnel"),
           apiGet<{ actions: ActionItem[] }>("/dashboard/recent-actions"),
+          apiGet<OutreachData>("/dashboard/outreach-stats").catch(() => null),
         ]);
         setStats(statsRes);
         setFunnel(funnelRes.funnel);
         setActions(actionsRes.actions);
+        if (outreachRes) setOutreach(outreachRes);
       } catch (err) {
         console.error("Failed to load dashboard:", err);
       } finally {
@@ -139,6 +162,11 @@ export default function DashboardPage() {
           <ContactFunnel data={funnel} />
           <RecentActions actions={actions} />
         </div>
+      )}
+
+      {/* Outreach Performance */}
+      {!loading && outreach && (
+        <OutreachStats data={outreach} />
       )}
     </div>
   );

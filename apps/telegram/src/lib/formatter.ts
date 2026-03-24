@@ -72,9 +72,22 @@ export const HELP_TEXT = `<b>Xperise BD Bot</b> - Trợ lý Sales Team
 <code>/find CFO Banking Vietnam</code>
 <code>/find CHRO FMCG</code>
 
-<b>Campaign Approval (ADMIN/MANAGER):</b>
-/approve &lt;campaignId&gt; - Duyệt tất cả emails
-/reject &lt;campaignId&gt; [lý do] - Từ chối emails
+<b>Campaign:</b>
+/campaign - Danh sách campaigns
+/campaign &lt;tên&gt; - Chi tiết + stats campaign
+/approve &lt;campaignId&gt; - Duyệt tất cả emails (ADMIN/MANAGER)
+/reject &lt;campaignId&gt; [lý do] - Từ chối emails (ADMIN/MANAGER)
+
+<b>AI Assistant:</b>
+/ai &lt;câu hỏi&gt; - Hỏi AI về pipeline, leads, performance
+/brief - Daily briefing (follow-ups, stale deals, next steps)
+/draft &lt;tên contact&gt; - AI soạn email outreach
+
+<i>Ví dụ:</i>
+<code>/ai Lead nào cần chăm sóc gấp?</code>
+<code>/ai Pipeline Q1 status?</code>
+<code>/draft Nguyen Van A</code>
+<code>/draft Nguyen Van A focus on digital transformation</code>
 
 <b>Cập nhật nhanh trong group:</b>
 <code>[Tên công ty] Nội dung update...</code>
