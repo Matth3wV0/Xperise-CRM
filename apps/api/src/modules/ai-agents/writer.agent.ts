@@ -1,9 +1,7 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@xperise/database";
 import { sendTelegramMessage } from "../../common/telegram-notify.js";
-
-const MODEL = anthropic("claude-sonnet-4-6");
+import { getModel } from "./gemini-provider.js";
 
 // ── Xperise context for email drafting ───────────────────────────────────────
 
@@ -135,7 +133,7 @@ export async function runWriterAgent(input: WriterInput): Promise<DraftResult> {
       : `Draft a follow-up email to this contact (they haven't replied to previous emails).${lang === "vi" ? " Write in Vietnamese." : ""}\n\n${contextBlock}`;
 
     const { text, usage } = await generateText({
-      model: MODEL,
+      model: getModel(),
       system: WRITER_SYSTEM,
       prompt,
       maxOutputTokens: 800,

@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4000";
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY ?? "";
@@ -17,7 +18,7 @@ export async function handleDraft(ctx: Context) {
   });
 
   if (!binding) {
-    await ctx.reply("Ban chua link tai khoan. Dung /start de xem huong dan.");
+    await ctx.reply("Ban chua link tai khoan. Dung /start de xem huong dan.", { ...rp(ctx) });
     return;
   }
 
@@ -27,7 +28,7 @@ export async function handleDraft(ctx: Context) {
       "Vui long cung cap ten contact:\n" +
         "<code>/draft Nguyen Van A</code>\n" +
         "<code>/draft Nguyen Van A focus on digital transformation</code>",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -55,7 +56,7 @@ export async function handleDraft(ctx: Context) {
   if (!contact) {
     await ctx.reply(
       `❌ Khong tim thay contact: <b>${query}</b>\n\nThu ten khac hoac kiem tra trong web app.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -63,7 +64,7 @@ export async function handleDraft(ctx: Context) {
   if (!contact.email) {
     await ctx.reply(
       `⚠️ <b>${contact.fullName}</b> chua co email. Cap nhat email truoc khi draft.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -71,7 +72,7 @@ export async function handleDraft(ctx: Context) {
   try {
     await ctx.reply(
       `✍️ Dang soan email cho <b>${contact.fullName}</b>...`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
 
     // Call the API's internal endpoint to trigger WRITER agent
@@ -92,13 +93,13 @@ export async function handleDraft(ctx: Context) {
     if (!res.ok) {
       const err = await res.text();
       console.error("[/draft] API error:", res.status, err);
-      await ctx.reply("⚠️ Khong the ket noi WRITER agent. Vui long thu lai.");
+      await ctx.reply("⚠️ Khong the ket noi WRITER agent. Vui long thu lai.", { ...rp(ctx) });
       return;
     }
 
     // The WRITER agent sends its own Telegram message with inline buttons — no need to reply again
   } catch (err) {
     console.error("[/draft] Error:", err);
-    await ctx.reply("Co loi khi tao email draft. Vui long thu lai.");
+    await ctx.reply("Co loi khi tao email draft. Vui long thu lai.", { ...rp(ctx) });
   }
 }

@@ -1,9 +1,8 @@
 import type { Context } from "grammy";
-import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@xperise/database";
-
-const MODEL = anthropic("claude-sonnet-4-6");
+import { rp } from "../lib/rp.js";
+import { generateWithFallback } from "../lib/gemini-provider";
+import { sanitizeAiHtml } from "../lib/formatter.js";
 
 const SYSTEM_PROMPT = `You are Xperise AI Sales Assistant — a BD intelligence agent for a consulting firm in Vietnam.
 You have access to CRM data (contacts, companies, pipelines, campaigns, actions) provided as context.
@@ -16,7 +15,7 @@ export async function handleAi(ctx: Context) {
   if (!question) {
     await ctx.reply(
       "Vui long dat cau hoi:\n<code>/ai Pipeline Q1 status?</code>\n<code>/ai Lead nao can cham soc?</code>",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -29,7 +28,7 @@ export async function handleAi(ctx: Context) {
   });
 
   if (!binding) {
-    await ctx.reply("Ban chua link tai khoan. Dung /start de xem huong dan.");
+    await ctx.reply("Ban chua link tai khoan. Dung /start de xem huong dan.", { ...rp(ctx) });
     return;
   }
 
@@ -40,19 +39,18 @@ export async function handleAi(ctx: Context) {
     // Gather CRM context based on question keywords
     const context = await gatherContext(question, binding.user.role, binding.user.id);
 
-    const { text } = await generateText({
-      model: MODEL,
+    const text = await generateWithFallback({
       system: SYSTEM_PROMPT,
       prompt: `CRM DATA CONTEXT:\n${context}\n\nUSER (${binding.user.name}, role: ${binding.user.role}):\n${question}`,
       maxOutputTokens: 1500,
     });
 
     // Telegram has 4096 char limit
-    const reply = text.length > 4000 ? text.substring(0, 3997) + "..." : text;
-    await ctx.reply(reply, { parse_mode: "HTML" });
+    const reply = sanitizeAiHtml(text);
+    await ctx.reply(reply, { ...rp(ctx), parse_mode: "HTML" });
   } catch (err) {
     console.error("[/ai] Error:", err);
-    await ctx.reply("Xin loi, co loi xay ra khi xu ly cau hoi. Vui long thu lai.");
+    await ctx.reply("Xin loi, co loi xay ra khi xu ly cau hoi. Vui long thu lai.", { ...rp(ctx) });
   }
 }
 

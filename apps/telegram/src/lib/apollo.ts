@@ -128,7 +128,8 @@ export async function searchApolloLeads(
   const res = await fetch(`${APOLLO_BASE}/mixed_people/api_search`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=utf-8",
+      "Accept": "application/json; charset=utf-8",
       "x-api-key": apiKey,
     },
     body: JSON.stringify(body),

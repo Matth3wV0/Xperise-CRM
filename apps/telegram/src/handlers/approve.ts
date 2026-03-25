@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 
 /**
  * /approve <campaignId>
@@ -14,12 +15,12 @@ export async function handleApprove(ctx: Context) {
   });
 
   if (!binding) {
-    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.");
+    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.", { ...rp(ctx) });
     return;
   }
 
   if (!["ADMIN", "MANAGER"].includes(binding.user.role)) {
-    await ctx.reply("⛔ Chỉ ADMIN hoặc MANAGER mới có thể duyệt campaign.");
+    await ctx.reply("⛔ Chỉ ADMIN hoặc MANAGER mới có thể duyệt campaign.", { ...rp(ctx) });
     return;
   }
 
@@ -27,7 +28,7 @@ export async function handleApprove(ctx: Context) {
   if (!campaignId) {
     await ctx.reply(
       "Vui lòng cung cấp campaign ID:\n<code>/approve &lt;campaignId&gt;</code>",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -38,7 +39,7 @@ export async function handleApprove(ctx: Context) {
 
   if (!campaign) {
     await ctx.reply(`❌ Không tìm thấy campaign <code>${campaignId}</code>.`, {
-      parse_mode: "HTML",
+      ...rp(ctx), parse_mode: "HTML",
     });
     return;
   }
@@ -51,7 +52,7 @@ export async function handleApprove(ctx: Context) {
   if (result.count === 0) {
     await ctx.reply(
       `ℹ️ Không có email nào đang chờ duyệt trong campaign <b>${campaign.name}</b>.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -59,7 +60,7 @@ export async function handleApprove(ctx: Context) {
   await ctx.reply(
     `✅ <b>Đã duyệt ${result.count} email</b> trong campaign <b>${campaign.name}</b>.\n` +
       `Trạng thái: PENDING_APPROVAL → APPROVED`,
-    { parse_mode: "HTML" }
+    { ...rp(ctx), parse_mode: "HTML" }
   );
 }
 
@@ -76,12 +77,12 @@ export async function handleReject(ctx: Context) {
   });
 
   if (!binding) {
-    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.");
+    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.", { ...rp(ctx) });
     return;
   }
 
   if (!["ADMIN", "MANAGER"].includes(binding.user.role)) {
-    await ctx.reply("⛔ Chỉ ADMIN hoặc MANAGER mới có thể từ chối campaign.");
+    await ctx.reply("⛔ Chỉ ADMIN hoặc MANAGER mới có thể từ chối campaign.", { ...rp(ctx) });
     return;
   }
 
@@ -92,7 +93,7 @@ export async function handleReject(ctx: Context) {
   if (!campaignId) {
     await ctx.reply(
       "Vui lòng cung cấp campaign ID:\n<code>/reject &lt;campaignId&gt; [lý do]</code>",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -103,7 +104,7 @@ export async function handleReject(ctx: Context) {
 
   if (!campaign) {
     await ctx.reply(`❌ Không tìm thấy campaign <code>${campaignId}</code>.`, {
-      parse_mode: "HTML",
+      ...rp(ctx), parse_mode: "HTML",
     });
     return;
   }
@@ -116,7 +117,7 @@ export async function handleReject(ctx: Context) {
   if (result.count === 0) {
     await ctx.reply(
       `ℹ️ Không có email nào đang chờ duyệt trong campaign <b>${campaign.name}</b>.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -124,7 +125,7 @@ export async function handleReject(ctx: Context) {
   await ctx.reply(
     `🚫 <b>Đã từ chối ${result.count} email</b> trong campaign <b>${campaign.name}</b>.\n` +
       `Lý do: ${reason}`,
-    { parse_mode: "HTML" }
+    { ...rp(ctx), parse_mode: "HTML" }
   );
 }
 

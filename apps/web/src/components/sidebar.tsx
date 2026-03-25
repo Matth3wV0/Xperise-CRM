@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -13,7 +14,6 @@ import {
   Search,
   Settings,
   LogOut,
-  Zap,
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -72,9 +72,7 @@ export function Sidebar() {
     <aside className="flex h-screen w-[220px] flex-col border-r border-border bg-card shrink-0">
       {/* Logo */}
       <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-          <Zap className="h-3.5 w-3.5 text-primary-foreground" />
-        </div>
+        <Image src="/icon.png" alt="Xperise Logo" width={28} height={28} className="rounded-lg shrink-0" />
         <span className="text-sm font-semibold tracking-tight">Xperise CRM</span>
       </div>
 

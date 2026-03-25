@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 import { HELP_TEXT } from "../lib/formatter.js";
 
 export async function handleStart(ctx: Context) {
@@ -9,7 +10,7 @@ export async function handleStart(ctx: Context) {
     ctx.chat?.type === "supergroup"
   ) {
     const chatId = String(ctx.chat.id);
-    const groupName = ctx.chat.title ?? "Unknown Group";
+    const groupName = ctx.chat.title ?? "Nhóm không tên";
 
     await prisma.telegramGroup.upsert({
       where: { chatId },
@@ -20,7 +21,7 @@ export async function handleStart(ctx: Context) {
     await ctx.reply(
       `✅ Group <b>${groupName}</b> đã được đăng ký!\n\n` +
         `Vào <b>Settings</b> trên web app để chọn group này làm group nhận thông báo.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -38,7 +39,7 @@ export async function handleStart(ctx: Context) {
   if (binding) {
     await ctx.reply(
       `👋 Xin chào <b>${binding.user.name}</b>! (${binding.user.role})\n\nTài khoản đã được link. Bạn có thể dùng bot trong group của team.\n\n${HELP_TEXT}`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -51,6 +52,6 @@ export async function handleStart(ctx: Context) {
       `3. Gửi lệnh tại đây: <code>/bind YOUR_CODE</code>\n\n` +
       `Sau khi link xong, bạn có thể cập nhật status trong group bằng:\n` +
       `<code>[Tên công ty] Nội dung update</code>`,
-    { parse_mode: "HTML" }
+    { ...rp(ctx), parse_mode: "HTML" }
   );
 }

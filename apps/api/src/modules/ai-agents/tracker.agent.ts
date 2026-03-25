@@ -1,9 +1,7 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@xperise/database";
 import { sendTelegramMessage } from "../../common/telegram-notify.js";
-
-const MODEL = anthropic("claude-sonnet-4-6");
+import { getModel } from "./gemini-provider.js";
 
 // ── TRACKER system prompts ──────────────────────────────────────────────────
 
@@ -114,7 +112,7 @@ export async function analyzeLeadsCold(
     }
 
     const { text, usage } = await generateText({
-      model: MODEL,
+      model: getModel(),
       system: COLD_LEAD_SYSTEM,
       prompt: `Phân tích ${coldContacts.length} cold leads sau và đề xuất action cụ thể cho team:\n\n${context}`,
       maxOutputTokens: 600,
@@ -232,7 +230,7 @@ export async function generateWeeklyInsights(
     }
 
     const { text, usage } = await generateText({
-      model: MODEL,
+      model: getModel(),
       system: WEEKLY_SYSTEM,
       prompt: `Đây là dữ liệu BD tuần này. Hãy phân tích và đưa ra nhận xét + đề xuất cho team:\n\n${context}`,
       maxOutputTokens: 500,

@@ -1,9 +1,8 @@
 import type { Context } from "grammy";
-import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@xperise/database";
-
-const MODEL = anthropic("claude-sonnet-4-6");
+import { rp } from "../lib/rp.js";
+import { generateWithFallback } from "../lib/gemini-provider";
+import { sanitizeAiHtml } from "../lib/formatter.js";
 
 export async function handleBrief(ctx: Context) {
   const telegramId = String(ctx.from?.id);
@@ -13,7 +12,7 @@ export async function handleBrief(ctx: Context) {
   });
 
   if (!binding) {
-    await ctx.reply("Ban chua link tai khoan. Dung /start de xem huong dan.");
+    await ctx.reply("Ban chua link tai khoan. Dung /start de xem huong dan.", { ...rp(ctx) });
     return;
   }
 
@@ -22,8 +21,7 @@ export async function handleBrief(ctx: Context) {
   try {
     const context = await gatherBriefContext(binding.user.id, binding.user.role);
 
-    const { text } = await generateText({
-      model: MODEL,
+    const text = await generateWithFallback({
       system: `You are Xperise AI Sales Assistant generating a daily BD briefing for ${binding.user.name} (${binding.user.role}).
 Structure:
 1. Key metrics snapshot (2-3 lines)
@@ -37,11 +35,11 @@ Reply in Vietnamese. Use HTML: <b>bold</b>, <i>italic</i>. Keep it under 3000 ch
       maxOutputTokens: 1200,
     });
 
-    const reply = text.length > 4000 ? text.substring(0, 3997) + "..." : text;
-    await ctx.reply(reply, { parse_mode: "HTML" });
+    const reply = sanitizeAiHtml(text);
+    await ctx.reply(reply, { ...rp(ctx), parse_mode: "HTML" });
   } catch (err) {
     console.error("[/brief] Error:", err);
-    await ctx.reply("Co loi khi tao briefing. Vui long thu lai.");
+    await ctx.reply("Co loi khi tao briefing. Vui long thu lai.", { ...rp(ctx) });
   }
 }
 

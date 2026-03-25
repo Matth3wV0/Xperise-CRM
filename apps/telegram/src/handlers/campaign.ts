@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 import { formatDate } from "../lib/formatter.js";
 
 const STATUS_ICON: Record<string, string> = {
@@ -36,7 +37,7 @@ async function listCampaigns(ctx: Context) {
   });
 
   if (campaigns.length === 0) {
-    await ctx.reply("Chưa có campaign nào. Tạo campaign trên web app.");
+    await ctx.reply("Chưa có campaign nào. Tạo campaign trên web app.", { ...rp(ctx) });
     return;
   }
 
@@ -55,7 +56,7 @@ async function listCampaigns(ctx: Context) {
 
   msg += "<i>Xem chi tiết:</i> <code>/campaign &lt;tên&gt;</code>";
 
-  await ctx.reply(msg, { parse_mode: "HTML" });
+  await ctx.reply(msg, { ...rp(ctx), parse_mode: "HTML" });
 }
 
 async function campaignDetail(ctx: Context, query: string) {
@@ -89,7 +90,7 @@ async function campaignDetail(ctx: Context, query: string) {
   if (!campaign) {
     await ctx.reply(
       `❌ Không tìm thấy campaign: <b>${query}</b>\n\nThử <code>/campaign</code> để xem danh sách.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -150,5 +151,5 @@ async function campaignDetail(ctx: Context, query: string) {
   // Campaign ID for quick actions
   msg += `\n<i>ID:</i> <code>${campaign.id}</code>`;
 
-  await ctx.reply(msg, { parse_mode: "HTML" });
+  await ctx.reply(msg, { ...rp(ctx), parse_mode: "HTML" });
 }

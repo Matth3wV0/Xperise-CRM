@@ -1,13 +1,13 @@
 export const STATUS_LABELS: Record<string, string> = {
-  NO_CONTACT: "Target List",
-  CONTACT: "Contact Found",
-  REACHED: "First Touch",
-  FOLLOW_UP: "Engaged",
-  MEETING_BOOKED: "Meeting Booked",
-  MET: "Met",
-  NURTURE: "Nurture",
-  LOST: "Lost",
-  CONVERTED: "Converted",
+  NO_CONTACT: "Chưa tiếp cận",
+  CONTACT: "Đã có contact",
+  REACHED: "Đã liên hệ",
+  FOLLOW_UP: "Đang follow-up",
+  MEETING_BOOKED: "Đã đặt lịch họp",
+  MET: "Đã gặp mặt",
+  NURTURE: "Đang nuôi dưỡng",
+  LOST: "Đã mất",
+  CONVERTED: "Đã chốt",
 };
 
 export const STATUS_EMOJI: Record<string, string> = {
@@ -57,6 +57,38 @@ export function formatDate(date: Date): string {
     year: "numeric",
     timeZone: "Asia/Ho_Chi_Minh",
   });
+}
+
+/** Telegram inline tags that can be opened/closed. */
+const TG_INLINE_TAGS = ["b", "strong", "i", "em", "u", "ins", "s", "strike", "del", "code", "a"];
+
+/**
+ * Safely truncate AI-generated HTML for Telegram:
+ * 1. Truncate to maxLen chars
+ * 2. Remove any trailing incomplete tag (e.g. "<b" with no ">")
+ * 3. Close any unclosed inline tags so Telegram doesn't reject the message
+ */
+export function sanitizeAiHtml(text: string, maxLen = 4000): string {
+  let result = text.length > maxLen ? text.substring(0, maxLen - 3) + "..." : text;
+  // Remove trailing partial tag
+  result = result.replace(/<[^>]*$/, "");
+  // Track open tags and close any left unclosed
+  const openTags: string[] = [];
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)(?:\s[^>]*)?\/?>/g;
+  let m: RegExpExecArray | null;
+  while ((m = tagRe.exec(result)) !== null) {
+    const closing = m[1] === "/";
+    const name = m[2].toLowerCase();
+    if (!TG_INLINE_TAGS.includes(name)) continue;
+    if (closing) {
+      const idx = openTags.lastIndexOf(name);
+      if (idx !== -1) openTags.splice(idx, 1);
+    } else {
+      openTags.push(name);
+    }
+  }
+  result += openTags.reverse().map((t) => `</${t}>`).join("");
+  return result;
 }
 
 export function daysSince(date: Date | null | undefined): number {

@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 import { findCompanyByName } from "../lib/fuzzy.js";
 import {
   STATUS_LABELS,
@@ -15,7 +16,7 @@ export async function handleStatus(ctx: Context) {
   if (!query) {
     await ctx.reply(
       "Vui lòng nhập tên công ty:\n<code>/status ABC Corp</code>",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -24,7 +25,7 @@ export async function handleStatus(ctx: Context) {
   if (!company) {
     await ctx.reply(
       `❌ Không tìm thấy công ty: <b>${query}</b>\n\nThử tên khác hoặc kiểm tra trong web app.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -67,7 +68,7 @@ export async function handleStatus(ctx: Context) {
     for (const c of contacts) {
       const emoji = STATUS_EMOJI[c.contactStatus] ?? "⚪";
       const label = STATUS_LABELS[c.contactStatus] ?? c.contactStatus;
-      const pic = c.assignedTo?.name ?? "Unassigned";
+      const pic = c.assignedTo?.name ?? "Chưa phân công";
       const days = daysSince(c.lastTouchedAt);
       const coldFlag = days >= COLD_DAYS_THRESHOLD ? ` 🥶 ${days}d` : "";
 
@@ -84,5 +85,5 @@ export async function handleStatus(ctx: Context) {
     }
   }
 
-  await ctx.reply(msg, { parse_mode: "HTML" });
+  await ctx.reply(msg, { ...rp(ctx), parse_mode: "HTML" });
 }

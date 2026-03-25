@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 
 export async function handleBind(ctx: Context) {
   if (ctx.chat?.type !== "private") {
@@ -13,7 +14,7 @@ export async function handleBind(ctx: Context) {
   if (!args) {
     await ctx.reply(
       "Vui lòng nhập code:\n<code>/bind YOUR_CODE</code>\n\nLấy code tại <b>Settings → Telegram</b> trong web app.",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -34,7 +35,7 @@ export async function handleBind(ctx: Context) {
   if (existing) {
     await ctx.reply(
       `Tài khoản Telegram này đã được link với <b>${existing.user.name}</b>.\nNếu muốn đổi, liên hệ Admin.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -54,7 +55,7 @@ export async function handleBind(ctx: Context) {
   if (!user) {
     await ctx.reply(
       "❌ Code không hợp lệ. Vui lòng lấy code mới tại <b>Settings → Telegram</b> trong web app.",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -62,13 +63,13 @@ export async function handleBind(ctx: Context) {
   if (user.telegramBindCodeExpiry && new Date() > user.telegramBindCodeExpiry) {
     await ctx.reply(
       "❌ Code đã hết hạn (10 phút). Vui lòng lấy code mới tại <b>Settings → Telegram</b>.",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
 
   if (user.telegramBinding) {
-    await ctx.reply("Tài khoản này đã được link với một Telegram khác rồi. Liên hệ Admin.");
+    await ctx.reply("Tài khoản này đã được link với một Telegram khác rồi. Liên hệ Admin.", { ...rp(ctx) });
     return;
   }
 
@@ -88,6 +89,6 @@ export async function handleBind(ctx: Context) {
       `👤 ${user.name} (${user.role})\n\n` +
       `Bây giờ bạn có thể cập nhật status trong group:\n` +
       `<code>[Tên công ty] Nội dung update</code>`,
-    { parse_mode: "HTML" }
+    { ...rp(ctx), parse_mode: "HTML" }
   );
 }

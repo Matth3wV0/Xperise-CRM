@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 import {
   STATUS_LABELS,
   STATUS_EMOJI,
@@ -16,7 +17,7 @@ export async function handleMine(ctx: Context) {
   });
 
   if (!binding) {
-    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.");
+    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.", { ...rp(ctx) });
     return;
   }
 
@@ -30,7 +31,7 @@ export async function handleMine(ctx: Context) {
   });
 
   if (contacts.length === 0) {
-    await ctx.reply("Bạn chưa được assign contact nào. Liên hệ Manager để được phân công.");
+    await ctx.reply("Bạn chưa được assign contact nào. Liên hệ Manager để được phân công.", { ...rp(ctx) });
     return;
   }
 
@@ -48,5 +49,5 @@ export async function handleMine(ctx: Context) {
 
   msg += `\n<i>Dùng /cold để xem leads nguội, /status [company] để xem chi tiết.</i>`;
 
-  await ctx.reply(msg, { parse_mode: "HTML" });
+  await ctx.reply(msg, { ...rp(ctx), parse_mode: "HTML" });
 }

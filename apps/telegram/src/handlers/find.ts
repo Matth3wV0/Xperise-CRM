@@ -1,6 +1,7 @@
 import type { Context } from "grammy";
 import { InlineKeyboard } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 import { parseFindQuery, searchApolloLeads, type ApolloPersonResult } from "../lib/apollo.js";
 
 /**
@@ -22,12 +23,12 @@ export async function handleFind(ctx: Context) {
   });
 
   if (!binding) {
-    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.");
+    await ctx.reply("Bạn chưa link tài khoản. Dùng /start để xem hướng dẫn.", { ...rp(ctx) });
     return;
   }
 
   if (!["ADMIN", "MANAGER", "BD_STAFF"].includes(binding.user.role)) {
-    await ctx.reply("⛔ Bạn không có quyền tìm kiếm leads.");
+    await ctx.reply("⛔ Bạn không có quyền tìm kiếm leads.", { ...rp(ctx) });
     return;
   }
 
@@ -42,14 +43,14 @@ export async function handleFind(ctx: Context) {
         "<code>/find Head of Finance Manufacturing</code>\n\n" +
         "Industry: bank, fmcg, media, pharma, manufacturing\n" +
         "Location: vietnam (mặc định), singapore, thailand",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
 
   const searchMsg = await ctx.reply(
     `🔍 Đang tìm kiếm "<b>${query}</b>" trên Apollo.io...`,
-    { parse_mode: "HTML" }
+    { ...rp(ctx), parse_mode: "HTML" }
   );
 
   try {
@@ -89,7 +90,9 @@ export async function handleFind(ctx: Context) {
     const keyboard = new InlineKeyboard();
     for (let i = 0; i < Math.min(result.people.length, 5); i++) {
       const p = result.people[i];
-      const label = `${i + 1}. ${p.first_name} — ${p.organization?.name ?? "?"}`;
+      const btnName = normalizeName(p.first_name || p.name);
+      const btnOrg = normalizeName(p.organization?.name ?? "?");
+      const label = `${i + 1}. ${btnName} — ${btnOrg}`;
       keyboard.text(label, `fi:${p.id}`).row();
     }
 
@@ -115,7 +118,7 @@ export async function handleFind(ctx: Context) {
   }
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : "Lỗi không xác định";
-    await ctx.reply(`❌ Lỗi: ${errMsg}`, { parse_mode: "HTML" });
+    await ctx.reply(`❌ Lỗi: ${errMsg}`, { ...rp(ctx), parse_mode: "HTML" });
   }
 }
 
@@ -143,7 +146,7 @@ function normalizeName(raw: string | null | undefined): string {
 
 function formatPersonEntry(index: number, p: ApolloPersonResult): string {
   const org = p.organization;
-  const rawName = p.name || `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Unknown";
+  const rawName = p.name || `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Không rõ tên";
   const fullName = normalizeName(rawName);
   let entry = `<b>${index}. ${fullName}</b>\n`;
   if (p.title) entry += `   ${normalizeName(p.title)}\n`;

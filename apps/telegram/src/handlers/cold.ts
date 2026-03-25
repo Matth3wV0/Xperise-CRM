@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { prisma } from "@xperise/database";
+import { rp } from "../lib/rp.js";
 import {
   STATUS_LABELS,
   daysSince,
@@ -58,7 +59,7 @@ export async function handleCold(ctx: Context) {
     const lastDate = c.lastTouchedAt
       ? formatDate(new Date(c.lastTouchedAt))
       : "Chưa bao giờ";
-    const pic = c.assignedTo?.name ?? "Unassigned";
+    const pic = c.assignedTo?.name ?? "Chưa phân công";
     const status = STATUS_LABELS[c.contactStatus] ?? c.contactStatus;
 
     msg += `❄️ <b>${c.company.name}</b> — ${c.fullName}\n`;
@@ -67,5 +68,5 @@ export async function handleCold(ctx: Context) {
 
   msg += `<i>Gửi <code>[Tên công ty] note</code> để cập nhật.</i>`;
 
-  await ctx.reply(msg, { parse_mode: "HTML" });
+  await ctx.reply(msg, { ...rp(ctx), parse_mode: "HTML" });
 }

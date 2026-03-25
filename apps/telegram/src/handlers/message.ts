@@ -1,5 +1,6 @@
 import type { Context } from "grammy";
 import { InlineKeyboard } from "grammy";
+import { rp } from "../lib/rp.js";
 import { prisma } from "@xperise/database";
 import { parseGroupMessage } from "../lib/parser.js";
 import { findCompanyByName, findPrimaryContact } from "../lib/fuzzy.js";
@@ -22,7 +23,7 @@ export async function handleGroupMessage(ctx: Context) {
     await ctx.reply(
       "⚠️ Bot không nhận diện được bạn vì đang gửi ẩn danh.\n" +
         "Vào <b>Group Settings → Administrators</b>, tìm tên bạn và tắt <b>\"Hide Admin Identity\"</b>, rồi gửi lại.",
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -43,7 +44,7 @@ export async function handleGroupMessage(ctx: Context) {
     await ctx.reply(
       `❓ Không tìm thấy công ty <b>${parsed.companyName}</b>.\n` +
         `Kiểm tra lại tên hoặc thêm vào web app.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -58,7 +59,7 @@ export async function handleGroupMessage(ctx: Context) {
   if (!contact) {
     await ctx.reply(
       `⚠️ <b>${company.name}</b> chưa có contacts nào. Thêm contact trong web app trước.`,
-      { parse_mode: "HTML" }
+      { ...rp(ctx), parse_mode: "HTML" }
     );
     return;
   }
@@ -111,6 +112,7 @@ export async function handleGroupMessage(ctx: Context) {
     `Muốn cập nhật status?`;
 
   await ctx.reply(confirmMsg, {
+    ...rp(ctx),
     parse_mode: "HTML",
     reply_markup: keyboard,
   });

@@ -1,5 +1,4 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@xperise/database";
 import {
   searchPeople,
@@ -7,8 +6,7 @@ import {
   type ApolloSearchFilters,
 } from "../apollo/apollo.service.js";
 import { sendTelegramMessage } from "../../common/telegram-notify.js";
-
-const MODEL = anthropic("claude-sonnet-4-6");
+import { getModel } from "./gemini-provider.js";
 
 // ── Xperise ICP definition ──────────────────────────────────────────────────
 
@@ -337,7 +335,7 @@ async function evaluateFitScores(people: ApolloPersonResult[]): Promise<ScoredLe
     .join("\n");
 
   const { text } = await generateText({
-    model: MODEL,
+    model: getModel(),
     system: ICP_PROMPT,
     prompt: `Evaluate these leads for Xperise ICP fit. For each lead, respond with exactly one line in format:
 Lead N: SCORE | REASON (max 15 words)
